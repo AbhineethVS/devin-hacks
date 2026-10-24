@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Syntune engine (dev)</title>
+    <style>
+      body {
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: #111318;
+        color: #e6e8ee;
+        margin: 24px;
+      }
+      textarea {
+        width: 100%;
+        height: 320px;
+        font:
+          13px/1.5 ui-monospace,
+          monospace;
+        background: #1a1d24;
+        color: inherit;
+        border: 1px solid #333;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin: 12px 0;
+        flex-wrap: wrap;
+      }
+      #status {
+        font-family: ui-monospace, monospace;
+        color: #9aa3b5;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Syntune engine dev page</h1>
+    <p>Temporary page for Card 1: listen to Play file with the Default pack.</p>
+    <textarea id="code" spellcheck="false"></textarea>
+    <div class="row">
+      <label
+        >Language
+        <select id="lang"></select
+      ></label>
+      <button id="play">Play file</button>
+      <button id="stop">Stop</button>
+      <label>BPM <input id="bpm" type="number" min="70" max="180" value="112" /></label>
+      <label><input id="backing" type="checkbox" checked /> Backing beat</label>
+    </div>
+    <div id="status">Ready</div>
+    <script type="module" src="./engine.ts"></script>
+  </body>
+</html>
