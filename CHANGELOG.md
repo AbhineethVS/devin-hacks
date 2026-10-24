@@ -1,14 +1,5 @@
 # Change log
 
-## 2026-10-24T21:53:05+05:30 — Correct Devin Hack Kochi event guidance
-
-- Changed: corrected the current event name and AI tool guidance in `.github/pull_request_template.md`, `AGENTS.md`, `AI_USAGE.md`, `CHANGELOG.md`, `README.md`, `RULES.md`, `SUBMISSION.md`.
-- Why: the organizer shared an older event template; Devin Hack Kochi has no
-  major AI usage constraints and the template must not require a particular AI provider.
-- Scope: preserved project implementation and historical assistance records.
-- Validation: reviewed documentation diffs, checked whitespace with `git diff --check`, and checked local Markdown links for new breakage.
-- Limitations: maintainer review is pending; application tests were not run for this documentation-only correction.
-
 Record each meaningful project change during the event, newest first. Update this file in the same commit as the change. Use a real timestamp with timezone, for example `2026-10-24T21:30:00+05:30`.
 
 ## Event build log
@@ -37,6 +28,15 @@ No project implementation has been recorded yet. Add entries as you build:
 - Why: give the parallel task cards a working build and fixed module signatures to code against.
 - Validation: `npm run build` passed. `npm test` passed: 10 files, 16 tests. `npm run lint` passed. Dev server loads at 1440×900 (screenshot in `docs/media/card-0-scaffold.png`).
 - Limitations: there's no audio, tracer or real editor yet; Play file and Run only show a status message. Stubs throw "Not implemented". `/api/health` hasn't been tested on Vercel yet. No browser console capture was done; the screenshot only shows that `main.ts` ran to completion.
+
+## 2026-10-24T21:53:05+05:30 — Correct Devin Hack Kochi event guidance
+
+- Changed: corrected the current event name and AI tool guidance in `.github/pull_request_template.md`, `AGENTS.md`, `AI_USAGE.md`, `CHANGELOG.md`, `README.md`, `RULES.md`, `SUBMISSION.md`.
+- Why: the organizer shared an older event template; Devin Hack Kochi has no
+  major AI usage constraints and the template must not require a particular AI provider.
+- Scope: preserved project implementation and historical assistance records.
+- Validation: reviewed documentation diffs, checked whitespace with `git diff --check`, and checked local Markdown links for new breakage.
+- Limitations: maintainer review is pending; application tests were not run for this documentation-only correction. (Merged from PR #3; entry moved into date order on merge.)
 
 ## 2026-10-24T21:42:00+05:30 — Fresh Syntune README
 
