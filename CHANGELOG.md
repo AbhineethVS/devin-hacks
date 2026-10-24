@@ -15,6 +15,22 @@ No project implementation has been recorded yet. Add entries as you build:
 - Limitations: <known issues, or "None identified in these checks">
 ```
 
+## 2026-10-24T22:43:00+05:30 — Default pack now sounds exactly like the original sound test
+
+- Changed:
+  - `src/engine/mapping.ts`: identifier hash is now `h * 31 + charCode`, seeded with 7 (it was FNV-1a, which changed every melody note). Type, keyword, number and string notes last a 16th (they were 8th notes). Bells play at velocity 0.8.
+  - `src/engine/scheduler.ts`: default velocity is 1 (it was 0.8).
+  - `src/packs/default.ts`: drums are filtered noise (1.8 kHz high-passed snare, 7 kHz and 6 kHz high-passed hats; they were MetalSynth hats and an unfiltered snare), the rim goes through a 2.5 kHz band-pass, and the lead, bell, bass, kick and drone settings match the test.
+  - `src/tracer/runSong.ts`: function pads and the per-depth pitch climb are off (`FUNCTION_PADS`, `DEPTH_CLIMB`); the Run bell plays at 0.48.
+  - `src/presets.ts`: bubble sort, quicksort, the C-style loop and the infinite loop are the exact sound-test programs. Fibonacci is kept.
+  - Tests updated to match, and `docs/SOUND_DESIGN.md` notes the reference sound.
+- Why: the engine sounded different from the sound test the project was chosen on.
+- Validation:
+  - `npm test` 102/102 passed, `npm run build` passed, `npm run lint` passed.
+  - A parity script compared Play-file step sequences against the sound-test page: **0 differing steps** for bubble sort (132), quicksort (200), the C loop (72) and the infinite loop (28).
+  - Headless Chrome on `/dev/engine.html` played with 0 console errors.
+- Limitations: Run mode follows the same rules but isn't note-identical, because the AST tracer also records loop-header checks, so runs have a few more steps. Not yet checked by ear after this change.
+
 ## 2026-10-24T22:27:00+05:30 — Cards 1 + 2: music engine, Default pack and Run-mode tracer
 
 - Changed:

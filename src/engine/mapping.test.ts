@@ -33,7 +33,7 @@ describe("stableHash", () => {
   it("is deterministic, unsigned and spreads names", () => {
     expect(stableHash("arr")).toBe(stableHash("arr"));
     expect(stableHash("arr")).not.toBe(stableHash("tmp"));
-    expect(stableHash("")).toBe(0x811c9dc5);
+    expect(stableHash("")).toBe(7); // h * 31 + c, seeded with 7 (the sound-test formula)
     expect(stableHash("anything")).toBeGreaterThanOrEqual(0);
   });
 });
@@ -64,7 +64,7 @@ describe("soundForToken (docs/SOUND_DESIGN.md table)", () => {
 
   it("type keywords play bass degree 0 at octave 2", () => {
     for (const t of ["let", "const", "var", "int", "float", "double", "char", "long", "bool"]) {
-      expect(sound(t, "type")).toEqual([{ voice: "bass", note: "A2", duration: "8n" }]);
+      expect(sound(t, "type")).toEqual([{ voice: "bass", note: "A2", duration: "16n" }]);
     }
   });
 

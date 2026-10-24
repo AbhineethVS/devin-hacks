@@ -1,5 +1,14 @@
 # Sound design (owned by the human; agents implement it exactly)
 
+> **Reference sound:** the Default pack must sound like the original sound test the project was chosen on. As of the parity pass, Play file is identical to it, note for note:
+> - identifier hash `h = h * 31 + charCode`, seeded with 7
+> - every pitched note lasts a 16th
+> - default velocity 1, bells at 0.8
+> - the drums are filtered noise
+> - the synth settings in `src/packs/default.ts`
+>
+> **Run mode:** function pads and the per-depth climb below are switched **off** (`FUNCTION_PADS`, `DEPTH_CLIMB` in `src/tracer/runSong.ts`) to match the test. Try them later by ear.
+
 This mapping was tested and sounds good. Keep it as the **Default** pack baseline, and only change it here first.
 
 ## Scale and grid

@@ -18,6 +18,12 @@ const ASSIGN_OPS = new Set(["=", "+=", "-=", "*=", "/=", "%="]);
 const PAD_EVERY = 8;
 /** Deep recursion (fib) would otherwise climb several octaves into shrill territory. */
 const MAX_DEPTH_BONUS = 5;
+/**
+ * The original sound test had no function pads and no per-depth climb (only octave 5 when
+ * depth > 1). Both are off so Run sounds like the tested prototype. Flip these to try them.
+ */
+export const FUNCTION_PADS = false;
+export const DEPTH_CLIMB = false;
 
 /** `x[...] =` somewhere on the line (token texts only, so it works with any tokenizer granularity). */
 export function hasArrayWrite(tokens: Token[]): boolean {
@@ -62,7 +68,7 @@ function bell(tokens: Token[], depth: number, pack: SoundPack): SoundEvent[] {
   if (!kw) return [];
   return soundForToken(kw, depth, pack)
     .filter((e) => e.voice === "bell")
-    .map((e) => ({ ...e, velocity: 0.6 }));
+    .map((e) => ({ ...e, velocity: 0.48 }));
 }
 
 /** Lead from the last numeric value (or the first identifier's hash); deeper calls climb by one degree per level. */
@@ -80,7 +86,11 @@ function melody(item: TraceItem, tokens: Token[], pack: SoundPack): SoundEvent[]
   return [
     {
       voice: "lead",
-      note: noteFromDegree(degree + Math.min(item.depth, MAX_DEPTH_BONUS), octave, pack),
+      note: noteFromDegree(
+        degree + (DEPTH_CLIMB ? Math.min(item.depth, MAX_DEPTH_BONUS) : 0),
+        octave,
+        pack,
+      ),
       velocity: 0.8,
       duration: "16n",
     },
@@ -123,7 +133,7 @@ export function buildRunSong(
       ...melody(item, tokens, pack),
     ];
     sincePad++;
-    if (item.fn && (item.fn !== lastFn || sincePad >= PAD_EVERY)) {
+    if (FUNCTION_PADS && item.fn && (item.fn !== lastFn || sincePad >= PAD_EVERY)) {
       events.push(padFor(item.fn, pack));
       sincePad = 0;
     }

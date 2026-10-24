@@ -26,8 +26,6 @@ const VOLUMES = {
   crash: -14,
 } as const;
 
-const HAT_HZ = 250;
-
 function createDefaultInstruments(): Instruments {
   const T = getTone();
   const out = getMasterInput();
@@ -60,62 +58,61 @@ function createDefaultInstruments(): Instruments {
 
   const lead = new T.PolySynth(T.Synth, {
     oscillator: { type: "triangle" },
-    envelope: { attack: 0.005, decay: 0.15, sustain: 0.3, release: 0.4 },
+    envelope: { attack: 0.005, decay: 0.25, sustain: 0.1, release: 0.4 },
     volume: VOLUMES.lead,
   }).connect(reverb);
 
   const bell = new T.PolySynth(T.FMSynth, {
-    harmonicity: 3.01,
-    modulationIndex: 12,
-    envelope: { attack: 0.002, decay: 0.6, sustain: 0, release: 0.8 },
-    modulationEnvelope: { attack: 0.002, decay: 0.3, sustain: 0, release: 0.4 },
+    harmonicity: 3,
+    modulationIndex: 8,
+    envelope: { attack: 0.002, decay: 0.5, sustain: 0, release: 0.6 },
     volume: VOLUMES.bell,
   }).connect(reverb);
 
   const bass = new T.MonoSynth({
     oscillator: { type: "sawtooth" },
     filter: { Q: 2, type: "lowpass" },
-    filterEnvelope: { attack: 0.005, decay: 0.2, sustain: 0.2, baseFrequency: 120, octaves: 3 },
-    envelope: { attack: 0.005, decay: 0.2, sustain: 0.4, release: 0.2 },
+    filterEnvelope: { attack: 0.005, decay: 0.2, sustain: 0.2, baseFrequency: 120, octaves: 2.5 },
+    envelope: { attack: 0.005, decay: 0.25, sustain: 0.3, release: 0.2 },
     volume: VOLUMES.bass,
   }).connect(out);
 
   const kick = new T.MembraneSynth({
-    pitchDecay: 0.04,
+    pitchDecay: 0.03,
     octaves: 6,
-    envelope: { attack: 0.001, decay: 0.35, sustain: 0, release: 0.1 },
+    envelope: { attack: 0.001, decay: 0.3, sustain: 0 },
     volume: VOLUMES.kick,
   }).connect(out);
 
+  // Drums use the filtered-noise recipe from the original sound test: `;` `(` `)` `,` `=` are the
+  // most common tokens, so soft high-passed noise keeps them crisp instead of harsh or metallic.
+  const snareFilter = new T.Filter(1800, "highpass").connect(out);
   const snare = new T.NoiseSynth({
     noise: { type: "white" },
-    envelope: { attack: 0.001, decay: 0.14, sustain: 0, release: 0.05 },
+    envelope: { attack: 0.001, decay: 0.12, sustain: 0 },
     volume: VOLUMES.snare,
-  }).connect(out);
+  }).connect(snareFilter);
 
-  const hat = new T.MetalSynth({
-    envelope: { attack: 0.001, decay: 0.05, release: 0.01 },
-    harmonicity: 5.1,
-    modulationIndex: 32,
-    resonance: 4000,
-    octaves: 1.5,
+  const hatFilter = new T.Filter(7000, "highpass").connect(out);
+  const hat = new T.NoiseSynth({
+    noise: { type: "white" },
+    envelope: { attack: 0.001, decay: 0.03, sustain: 0 },
     volume: VOLUMES.hat,
-  }).connect(out);
+  }).connect(hatFilter);
 
-  const openhat = new T.MetalSynth({
-    envelope: { attack: 0.001, decay: 0.3, release: 0.1 },
-    harmonicity: 5.1,
-    modulationIndex: 32,
-    resonance: 4000,
-    octaves: 1.5,
+  const openhatFilter = new T.Filter(6000, "highpass").connect(out);
+  const openhat = new T.NoiseSynth({
+    noise: { type: "white" },
+    envelope: { attack: 0.001, decay: 0.25, sustain: 0 },
     volume: VOLUMES.openhat,
-  }).connect(out);
+  }).connect(openhatFilter);
 
+  const rimFilter = new T.Filter(2500, "bandpass").connect(out);
   const rim = new T.Synth({
     oscillator: { type: "square" },
-    envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.02 },
+    envelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.02 },
     volume: VOLUMES.rim,
-  }).connect(out);
+  }).connect(rimFilter);
 
   const padFilter = new T.Filter(1400, "lowpass").connect(reverb);
   const pad = new T.PolySynth(T.Synth, {
@@ -127,9 +124,9 @@ function createDefaultInstruments(): Instruments {
   // Infinite-loop drone: distorted FM on A1 (the note is fixed by the sound design).
   const droneDist = new T.Distortion(0.6).connect(out);
   const drone = new T.FMSynth({
-    harmonicity: 1.5,
-    modulationIndex: 8,
-    envelope: { attack: 0.05, decay: 0.2, sustain: 0.9, release: 0.6 },
+    harmonicity: 1.01,
+    modulationIndex: 20,
+    envelope: { attack: 0.5, decay: 0, sustain: 1, release: 1 },
     volume: VOLUMES.drone,
   }).connect(droneDist);
 
@@ -164,13 +161,18 @@ function createDefaultInstruments(): Instruments {
     kick: make([kick], (note, dur, time, vel) =>
       kick.triggerAttackRelease(note ?? "C1", dur, time, vel),
     ),
-    snare: make([snare], (_note, dur, time, vel) => snare.triggerAttackRelease(dur, time, vel)),
-    hat: make([hat], (_note, dur, time, vel) => hat.triggerAttackRelease(HAT_HZ, dur, time, vel)),
-    openhat: make([openhat], (_note, dur, time, vel) =>
-      openhat.triggerAttackRelease(HAT_HZ, dur, time, vel),
+    snare: make([snare, snareFilter], (_note, dur, time, vel) =>
+      snare.triggerAttackRelease(dur, time, vel),
     ),
-    rim: make([rim], (note, dur, time, vel) =>
-      rim.triggerAttackRelease(note ?? "C6", dur, time, vel),
+    // Hats are short ticks whatever the step length, so they never smear into each other.
+    hat: make([hat, hatFilter], (_note, _dur, time, vel) =>
+      hat.triggerAttackRelease("32n", time, vel),
+    ),
+    openhat: make([openhat, openhatFilter], (_note, dur, time, vel) =>
+      openhat.triggerAttackRelease(dur, time, vel),
+    ),
+    rim: make([rim, rimFilter], (note, _dur, time, vel) =>
+      rim.triggerAttackRelease(note ?? "C6", "32n", time, vel),
     ),
     drone: make(
       [drone, droneDist],

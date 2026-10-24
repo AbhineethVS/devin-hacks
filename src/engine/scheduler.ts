@@ -43,7 +43,7 @@ export interface SyntunePlayer extends Player {
 export const COLLISION_NUDGE_S = 0.003;
 /** Backing beat velocity (docs/SOUND_DESIGN.md: "velocity ~0.4"). */
 export const BACKING_VELOCITY = 0.4;
-const DEFAULT_VELOCITY = 0.8;
+const DEFAULT_VELOCITY = 1;
 const DEFAULT_DURATION: Partial<Record<Voice, string>> = { drone: "2m", pad: "4n", crash: "2n" };
 const MIN_BPM = 20;
 const MAX_BPM = 400;

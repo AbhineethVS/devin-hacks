@@ -82,7 +82,7 @@ describe("executeInstrumented / traceSource", () => {
     const t = traceOf("quicksort");
     expect(t.error).toBeUndefined();
     expect(maxDepth(t)).toBeGreaterThan(1);
-    expect(t.items.some((i) => i.fn === "partition")).toBe(true);
+    expect(t.items.some((i) => i.fn === "quickSort")).toBe(true);
   });
 
   it("fibonacci reaches depth > 3", () => {

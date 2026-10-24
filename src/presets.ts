@@ -7,10 +7,12 @@ export interface Preset {
   code: string;
 }
 
-// One statement per line keeps the line-based tracer (skills/execution-tracing) happy.
-const bubbleSort = `const arr = [5, 2, 9, 1, 7, 3, 8];
-for (let i = 0; i < arr.length; i++) {
-  for (let j = 0; j < arr.length - i - 1; j++) {
+// The first four are the exact programs from the original sound test, so they play the songs the
+// project was chosen on. The AST tracer handles several statements on one line.
+const bubbleSort = `let arr = [5, 2, 8, 1, 9, 3, 7, 4];
+let n = arr.length;
+for (let i = 0; i < n - 1; i++) {
+  for (let j = 0; j < n - i - 1; j++) {
     if (arr[j] > arr[j + 1]) {
       let tmp = arr[j];
       arr[j] = arr[j + 1];
@@ -20,52 +22,39 @@ for (let i = 0; i < arr.length; i++) {
 }
 `;
 
-const quicksort = `function swap(a, i, j) {
-  const t = a[i];
-  a[i] = a[j];
-  a[j] = t;
-}
-
-function partition(a, lo, hi) {
-  const pivot = a[hi];
+const quicksort = `let arr = [5, 2, 8, 1, 9, 3, 7, 4];
+function quickSort(a, lo, hi) {
+  if (lo >= hi) return;
+  let p = a[hi];
   let i = lo;
   for (let j = lo; j < hi; j++) {
-    if (a[j] < pivot) {
-      swap(a, i, j);
+    if (a[j] < p) {
+      let t = a[i]; a[i] = a[j]; a[j] = t;
       i++;
     }
   }
-  swap(a, i, hi);
-  return i;
+  let t = a[i]; a[i] = a[hi]; a[hi] = t;
+  quickSort(a, lo, i - 1);
+  quickSort(a, i + 1, hi);
 }
-
-function quicksort(a, lo, hi) {
-  if (lo >= hi) {
-    return;
-  }
-  const p = partition(a, lo, hi);
-  quicksort(a, lo, p - 1);
-  quicksort(a, p + 1, hi);
-}
-
-const nums = [6, 3, 8, 1, 9, 2, 7, 4];
-quicksort(nums, 0, nums.length - 1);
+quickSort(arr, 0, arr.length - 1);
 `;
 
 const cForLoop = `int n = 8;
 int total = 0;
 for (int i = 0; i < n; i++) {
-  int square = i * i;
-  total += square;
-  printf("%d\\n", total);
+  if (i % 2 == 0) {
+    total = total + i;
+  } else {
+    total = total - 1;
+  }
 }
 `;
 
 // Deliberately buggy: i never changes, so the loop never ends.
 const infiniteLoop = `let i = 0;
-let total = 0;
 while (i < 5) {
-  total = total + i;
+  console.log(i);
 }
 `;
 

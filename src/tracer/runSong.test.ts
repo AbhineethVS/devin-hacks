@@ -126,14 +126,14 @@ describe("buildRunSong", () => {
     expect(song.steps[2]?.events.find((e) => e.voice === "snare")?.velocity).toBe(0.8);
   });
 
-  it("the first keyword rings a bell at velocity 0.6", () => {
+  it("the first keyword rings a bell at velocity 0.48 (0.6 × 0.8, as in the sound test)", () => {
     const song = buildRunSong(trace([{ line: 3 }]), LINES, pack, 112);
     expect(song.steps[0]?.events.filter((e) => e.voice === "bell")).toEqual([
-      { voice: "bell", note: "D4", velocity: 0.6 },
+      { voice: "bell", note: "D4", velocity: 0.48 },
     ]);
   });
 
-  it("melody comes from the last value; deeper recursion climbs", () => {
+  it("melody comes from the last value; depth > 1 moves up an octave (no per-level climb)", () => {
     const song = buildRunSong(
       trace([
         { values: [9, 2], depth: 0 },
@@ -145,7 +145,7 @@ describe("buildRunSong", () => {
       112,
     );
     const leads = song.steps.map((s) => s.events.find((e) => e.voice === "lead")?.note);
-    expect(leads).toEqual(["D4", "E4", "A6"]); // degree 2, 2+1, 2+3=5 at octave 5 (depth > 1)
+    expect(leads).toEqual(["D4", "D4", "D5"]); // degree 2 each time; octave 5 once depth > 1
     expect(song.steps[2]?.meta).toEqual({ depth: 3, fn: "f" });
   });
 
@@ -154,7 +154,7 @@ describe("buildRunSong", () => {
     expect(song.steps[0]?.events.some((e) => e.voice === "lead")).toBe(true);
   });
 
-  it("plays a pad when entering a function", () => {
+  it("plays no function pads (off for parity with the sound test)", () => {
     const song = buildRunSong(
       trace([{ depth: 0 }, { depth: 1, fn: "f" }, { depth: 1, fn: "f" }]),
       LINES,
@@ -162,7 +162,7 @@ describe("buildRunSong", () => {
       112,
     );
     const pads = song.steps.map((s) => s.events.filter((e) => e.voice === "pad").length);
-    expect(pads).toEqual([0, 1, 0]);
+    expect(pads).toEqual([0, 0, 0]);
   });
 
   it("maps negative and fractional values into degrees 0..9", () => {

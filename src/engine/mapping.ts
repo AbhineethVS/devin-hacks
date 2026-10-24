@@ -31,14 +31,15 @@ function mod(a: number, n: number): number {
   return ((a % n) + n) % n;
 }
 
-/** Deterministic 32-bit FNV-1a hash (unsigned). Never use Math.random in mapping. */
+/**
+ * Deterministic unsigned hash (h * 31 + charCode, seeded with 7). This is the exact formula from
+ * the original sound test, so identifiers keep the melody the project was chosen on.
+ * Never use Math.random in mapping.
+ */
 export function stableHash(s: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
+  let h = 7;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
 }
 
 /** scale[d mod n] at octave + floor(d / n). Negative degrees walk down. Always in-scale. */
@@ -116,17 +117,17 @@ export function soundForToken(tok: Token, depth: number, pack: SoundPack): Sound
     case "op":
       return opSound(tok.text);
     case "type":
-      return [{ voice: "bass", note: noteFromDegree(0, 2, pack), duration: "8n" }];
+      return [{ voice: "bass", note: noteFromDegree(0, 2, pack), duration: "16n" }];
     case "kw": {
       const d = keywordDegree(tok.text);
       return [
-        { voice: "bell", note: noteFromDegree(d, 4, pack), duration: "8n" },
-        { voice: "bass", note: noteFromDegree(d, 2, pack), duration: "8n" },
+        { voice: "bell", note: noteFromDegree(d, 4, pack), velocity: 0.8, duration: "16n" },
+        { voice: "bass", note: noteFromDegree(d, 2, pack), duration: "16n" },
       ];
     }
     case "num": {
       const d = mod(Math.round(numberValue(tok.text)), 10);
-      return [{ voice: "bass", note: noteFromDegree(d, 2, pack), duration: "8n" }];
+      return [{ voice: "bass", note: noteFromDegree(d, 2, pack), duration: "16n" }];
     }
     case "str":
       // Deviation: the doc says degree = length; wrapped mod 10 (like numbers) so a long
@@ -135,7 +136,7 @@ export function soundForToken(tok: Token, depth: number, pack: SoundPack): Sound
         {
           voice: "lead",
           note: noteFromDegree(stringContentLength(tok.text) % 10, 5, pack),
-          duration: "8n",
+          duration: "16n",
         },
       ];
     case "id": {
