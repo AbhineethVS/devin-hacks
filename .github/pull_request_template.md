@@ -29,7 +29,7 @@
 
 - [ ] `CHANGELOG.md` records this change with its actual timestamp and validation.
 - [ ] `README.md` reflects any setup or behaviour changes, if applicable.
-- [ ] Suggested `AI_USAGE.md` row for this Devin session (the human copies it in):
+- [ ] Suggested `AI_USAGE.md` row for AI assistance, if keeping this project record (pending human review):
 - [ ] Simple code patterns; no credentials or private data.
 
 ## Known limitations

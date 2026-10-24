@@ -2,7 +2,7 @@
 
 ## Event
 
-**Devin Hacks Kochi**
+**Devin Hack Kochi**
 
 **Dates:** 24–25 October 2026 (overnight)
 
@@ -26,7 +26,7 @@ All times are in **Indian Standard Time (IST, UTC+05:30)**:
    4. **Make Room for Play:** build something people want to experience: play, music, stories, interaction.
    - TODO: confirm whether the prizes are overall or per track, and whether a track must be declared.
 3. **Start from scratch at the event.** Libraries, APIs and public datasets are welcome. Pre-built projects are not allowed. This repository supplies documentation and planning scaffolding only.
-4. **Build with Devin, and document how you used it.** Keep a short, accurate record in [AI_USAGE.md](AI_USAGE.md). If you use any other AI tool, disclose it there too. TODO: confirm with the organizers whether other AI tools are allowed.
+4. **AI tools and providers are unrestricted by this template.** Devin Hack Kochi has no major AI usage constraints. Devin and other AI tools may be used. [AI_USAGE.md](AI_USAGE.md) is a project record, not an additional eligibility requirement.
 5. **Submit your code repository, a short project description and a working demo** (a demo video is expected). Use [SUBMISSION.md](SUBMISSION.md) to prepare them. Follow the organizers' submission instructions at the venue.
 
 ## Evaluation

@@ -7,7 +7,7 @@
 This is a solo, overnight hackathon build with a hard demo deadline. **Working and polished beats clever and broad.**
 
 ## Read first, every session
-1. [RULES.md](RULES.md): the event rules. Build from scratch at the event, solo, with Devin.
+1. [RULES.md](RULES.md): the event rules for Devin Hack Kochi. The event has no major AI usage constraints; the project's Devin workflow is a tool choice, not an event restriction.
 2. [CONTRACTS.md](CONTRACTS.md): interfaces and data shapes. **Do not change a contract silently.** If you must, say so in the PR under "Contract change" with the reason.
 3. [docs/PRODUCT.md](docs/PRODUCT.md): what we're building and the scope.
 4. Your role brief in `agents/` and the skills named in your task card ([docs/TASK_CARDS.md](docs/TASK_CARDS.md)).
@@ -59,7 +59,7 @@ Stay inside the folders your task names. Keep changes elsewhere minimal and call
 
 ## Document every meaningful change
 - **CHANGELOG.md:** update it in the same commit or PR as each meaningful change.
-- **AI_USAGE.md:** the human records each Devin session (card, session link, PR, what Devin built, what was changed by hand). Devin may draft its own row in the PR description for the human to copy.
+- **AI_USAGE.md:** when keeping this project record, document actual AI assistance (tool, task, session link if available, PR, and human changes). Any AI tool may draft a row in the PR description for human review; this is not an event eligibility requirement.
 - **Keep claims accurate.** Distinguish working and verified behaviour from planned work. Never invent test results, deployment success, AI usage or timestamps.
 
 ## Regular, honest commits

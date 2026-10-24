@@ -38,7 +38,7 @@ Solo hackathon.
 
 - [ ] The project implementation started from scratch at the event.
 - [ ] Built solo.
-- [ ] Devin was used during development, and its usage (and any other AI tools) is documented.
+- [ ] Any AI usage record included accurately identifies the tools used; this template requires no particular AI tool or provider.
 - [ ] The code repository URL, short description, working demo and demo video are provided.
 - [ ] README setup and demo instructions match the submitted code.
 - [ ] Actual checks and known limitations are documented.
@@ -47,4 +47,4 @@ Solo hackathon.
 - [ ] No credentials or private data are in the repository or demo instructions.
 - [ ] The organizers' submission method and deadline were followed.
 
-Event reference: [Devin Hacks Kochi on Luma](https://luma.com/3v8n74l1). The event ends **25 October 2026, 11:00 AM IST**.
+Event reference: [Devin Hack Kochi on Luma](https://luma.com/3v8n74l1). The event ends **25 October 2026, 11:00 AM IST**.
