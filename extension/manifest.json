@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "Rebuild any page from a prompt. The site keeps working.",
   "permissions": ["storage"],
-  "host_permissions": ["https://api.openai.com/*"],
+  "host_permissions": ["https://api.openai.com/*", "<all_urls>"],
   "background": { "service_worker": "background.js" },
   "action": { "default_title": "Remodel" },
   "content_scripts": [

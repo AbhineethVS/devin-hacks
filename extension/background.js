@@ -6,6 +6,34 @@ chrome.action.onClicked.addListener((tab) => {
   if (tab.id) chrome.tabs.sendMessage(tab.id, { type: "toggle-panel" }).catch(() => {});
 });
 
+// Screenshots for the visual review. captureVisibleTab captures whichever tab is visible in the window,
+// so it refuses when the requesting tab is not the active one.
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type !== "capture") return;
+  capture(sender.tab).then(sendResponse, (err) => sendResponse({ error: String(err?.message || err) }));
+  return true;
+});
+
+async function capture(tab) {
+  if (!tab?.id) throw new Error("No tab to capture.");
+  const current = await chrome.tabs.get(tab.id);
+  if (!current.active) throw new Error("The tab is not visible.");
+  const raw = await chrome.tabs.captureVisibleTab(current.windowId, { format: "jpeg", quality: 80 });
+  return { dataUrl: await shrink(raw, 1280) };
+}
+
+async function shrink(dataUrl, maxWidth) {
+  const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
+  const scale = Math.min(1, maxWidth / bitmap.width);
+  const canvas = new OffscreenCanvas(Math.round(bitmap.width * scale), Math.round(bitmap.height * scale));
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 0.72 });
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return `data:image/jpeg;base64,${btoa(binary)}`;
+}
+
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== "generate") return;
   const abort = new AbortController();
@@ -24,10 +52,12 @@ chrome.runtime.onConnect.addListener((port) => {
         body: JSON.stringify({
           model: msg.model || model || DEFAULT_MODEL,
           instructions: msg.system,
-          input: msg.user,
+          input: msg.images?.length
+            ? [{ role: "user", content: [{ type: "input_text", text: msg.user }, ...msg.images.map((url) => ({ type: "input_image", image_url: url }))] }]
+            : msg.user,
           stream: true,
           reasoning: { effort: msg.effort || "low" },
-          max_output_tokens: 24000,
+          max_output_tokens: msg.maxTokens || 24000,
         }),
       });
       if (!res.ok) {

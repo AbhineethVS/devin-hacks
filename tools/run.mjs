@@ -55,12 +55,25 @@ await page.screenshot({ path: `${outDir}/${tag}_1_generating.png` });
 let status = "";
 for (let i = 0; i < 120; i++) {
   status = await panelEval((root) => root.querySelector(".status").textContent);
-  if (/^(Done|Error)/.test(status)) break;
+  if (/done in|^Error/i.test(status)) break;
   await sleep(2000);
 }
 console.log(`[${model}] ${((Date.now() - t0) / 1000).toFixed(0)}s → ${status.slice(0, 300)}`);
 await sleep(1500);
 await page.screenshot({ path: `${outDir}/${tag}_2_remodelled.png` });
+
+// The AI visual review runs after the design appears; wait for its verdict.
+if (/done in/i.test(status)) {
+  const r0 = Date.now();
+  for (let i = 0; i < 150; i++) {
+    status = await panelEval((root) => root.querySelector(".status").textContent);
+    if (/^(AI review|Polish attempt)/.test(status)) break;
+    await sleep(2000);
+  }
+  console.log(`  review ${((Date.now() - r0) / 1000).toFixed(0)}s → ${status.slice(0, 400)}`);
+  await sleep(1500);
+  await page.screenshot({ path: `${outDir}/${tag}_2b_reviewed.png` });
+}
 
 // Scroll inside the overlay iframe to capture more of the redesign.
 const frame = page.frames().find((f) => f.url().includes("sandbox.html"));

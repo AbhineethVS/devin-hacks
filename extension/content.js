@@ -29,8 +29,17 @@ RULES
 - Design the WHOLE page top to bottom for desktop widths (1280–1600px), responsive down to tablet.
 - Make it authored, not AI-template-like: establish one strong visual thesis and repeat a small set of motifs deliberately. Avoid generic gradient blobs, excessive rounded cards, random glassmorphism, and a dashboard grid unless the content calls for it.
 - Invent components that fit the subject: chapter openers, timelines, annotated galleries, stat rails, archival labels, pull quotes, maps, dossiers, sticky table of contents, or entirely new forms.
-- For Wikipedia, every rendered article section MUST have data-rm-section="<section.id>" and data-rm-title="<section.title>". Keep every section, even if some are visually condensed.
-- Cinematic motion hooks are available: data-rm-reveal="up|left|right|scale", data-rm-parallax="0.05..0.35", and data-rm-progress. Use them with restraint on meaningful elements. You may also write custom motion in mount(root).
+- For Wikipedia, every rendered article section MUST have id="<section.id>", data-rm-section="<section.id>" and data-rm-title="<section.title>". Keep every section, even if some are visually condensed.
+- MOTION TOOLKIT. The host runtime implements these attributes smoothly and switches them off for reduced-motion users. Prefer them over hand-written scroll code:
+  data-rm-reveal="up|down|left|right|scale|mask|blur"  entrance when the element scrolls into view
+  data-rm-stagger="up|..."  on a container: its children enter one after another (lists, timelines, galleries)
+  data-rm-scrub="zoom|rise|drift|fade|unmask"  tied to scroll position; ideal for hero and chapter images inside overflow:hidden frames
+  data-rm-parallax="0.05..0.35"  depth for decorative or image layers
+  data-rm-count  on an element whose text is a statistic: the number counts up once (never on years)
+  data-rm-progress  receives --rm-progress (0..1 for the whole page), e.g. a reading-progress bar
+  Every [data-rm-section] receives --rm-section-progress (0..1) and data-rm-active while it is the current chapter. Links to "#<section.id>" get class rm-active and aria-current. Elements with data-rm-chapter-label display the current chapter title (great in a sticky header). Smooth anchor scrolling is built in.
+  Scrub and parallax use the CSS translate and scale properties, so don't put them on elements whose own transform matters. Use motion with intent: a few memorable moments beat animating everything.
+- Add tasteful micro-interactions in CSS: link underline sweeps, image zoom inside frames on hover, button press states, visible focus rings. Keep them between 150ms and 400ms. mount(root) remains available for custom interactions such as tabs or timelines.
 - Use the data's images generously (object-fit, aspect-ratio). Images can fail to load: the layout must not depend on them.
 - Body copy stays readable: max ~70ch line length.
 - Include one small witty sticker or badge that fits the style and the site.
@@ -80,6 +89,24 @@ RULES
     });
   }
 
+  // Request/response calls into the sandbox (audit and capture controls).
+  let callSeq = 0;
+  const calls = new Map();
+  function sandboxCall(msg, timeout = 15000) {
+    return new Promise((resolve, reject) => {
+      const id = ++callSeq;
+      const timer = setTimeout(() => {
+        calls.delete(id);
+        reject(new Error(`${msg.type} timed out`));
+      }, timeout);
+      calls.set(id, {
+        resolve: (value) => { clearTimeout(timer); resolve(value); },
+        reject: (err) => { clearTimeout(timer); reject(err); },
+      });
+      overlay.contentWindow.postMessage({ ...msg, id }, "*");
+    });
+  }
+
   function setOverlay(visible) {
     if (!overlay) return;
     overlayVisible = visible;
@@ -97,6 +124,13 @@ RULES
     if (msg.type === "ready") overlay._ready();
     else if (msg.type === "rendered") pendingRender?.resolve();
     else if (msg.type === "render-error") pendingRender?.reject(new Error(msg.message));
+    else if (msg.type === "reply") {
+      const call = calls.get(msg.id);
+      if (!call) return;
+      calls.delete(msg.id);
+      if (msg.error) call.reject(new Error(msg.error));
+      else call.resolve(msg.result);
+    }
     else if (msg.type === "toggle") setOverlay(!overlayVisible);
     else if (msg.type === "select-section") panel.openRemix(msg.section);
     else if (msg.type === "navigate") {
@@ -117,17 +151,22 @@ RULES
   }, true);
 
   // ---------- model streaming ----------
-  function stream(system, user, model, onDelta) {
+  // options.ctl receives a cancel() that aborts the request and rejects the promise.
+  function stream(system, user, model, onDelta, options = {}) {
     return new Promise((resolve, reject) => {
       const port = chrome.runtime.connect({ name: "generate" });
       const ping = setInterval(() => port.postMessage({ type: "ping" }), 20000);
-      const finish = () => { clearInterval(ping); port.disconnect(); };
+      const finish = () => {
+        clearInterval(ping);
+        try { port.disconnect(); } catch {}
+      };
+      if (options.ctl) options.ctl.cancel = () => { finish(); reject(new Error("cancelled")); };
       port.onMessage.addListener((msg) => {
         if (msg.type === "delta") onDelta(msg);
         else if (msg.type === "done") { finish(); resolve(msg.text); }
         else if (msg.type === "error") { finish(); reject(new Error(msg.message)); }
       });
-      port.postMessage({ type: "generate", system, user, model });
+      port.postMessage({ type: "generate", system, user, model, images: options.images, effort: options.effort, maxTokens: options.maxTokens });
     });
   }
 
@@ -166,6 +205,146 @@ ${previousCode}
 Return the complete revised renderer, not a patch.`;
   }
 
+  // ---------- visual review: screenshot the result, let the model judge it, repair once ----------
+  const REVIEW_SYSTEM = `You are a meticulous design QA lead. You receive screenshots of an AI-generated redesign of a web page, captured top to bottom (they sample a long page, so gaps between them are normal), plus findings from automated checks.
+
+Report only real defects a visitor would notice. Do not criticise choices the style request asked for.
+- high: overlapping or illegible text, content cut off or hidden, empty or placeholder content, stray debugging text, elements escaping their containers, huge accidental blank regions, a layout that is clearly broken.
+- medium: weak contrast, cramped or uneven spacing, misalignment, awkward image crops, elements that look unintended.
+- low: matters of taste.
+
+Return ONLY JSON, no prose:
+{"verdict":"pass"|"fix","issues":[{"severity":"high"|"medium"|"low","where":"short location","problem":"what is wrong","fix":"how to fix it in CSS/HTML"}]}
+Use "fix" only when there is at least one high issue or two or more medium issues. At most 8 issues.`;
+
+  function reviewPrompt(stylePrompt, data, auditIssues) {
+    const automated = auditIssues.length
+      ? auditIssues.map((i) => `- [${i.severity}] ${i.where}: ${i.problem}`).join("\n")
+      : "- none";
+    return `STYLE REQUEST: "${stylePrompt}"
+PAGE: ${data.title || data.pageTitle || data.story?.title || page.type}
+
+AUTOMATED CHECK FINDINGS:
+${automated}
+
+Review the attached screenshots.`;
+  }
+
+  function parseReview(text) {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("The reviewer did not return JSON.");
+    const review = JSON.parse(match[0]);
+    return {
+      verdict: review.verdict === "fix" ? "fix" : "pass",
+      issues: (Array.isArray(review.issues) ? review.issues : []).slice(0, 8).map((i) => ({
+        severity: ["high", "medium", "low"].includes(i.severity) ? i.severity : "medium",
+        where: String(i.where || ""),
+        problem: String(i.problem || ""),
+        fix: String(i.fix || ""),
+      })),
+    };
+  }
+
+  function polishPrompt(stylePrompt, data, code, issues) {
+    return `${userPrompt(stylePrompt, data)}
+
+YOUR CURRENT RENDERER:
+\`\`\`js
+${code}
+\`\`\`
+
+A visual QA review of the rendered page found these defects:
+${issues.map((i) => `- [${i.severity}] ${i.where}: ${i.problem}${i.fix ? ` Fix: ${i.fix}` : ""}`).join("\n")}
+
+Fix every high and medium defect while keeping the same design direction, all content, and every data-rm hook. Return the complete corrected renderer in one \`\`\`js block.`;
+  }
+
+  let reviewRun = 0;
+  let reviewCtl = null;
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  function cancelReview() {
+    reviewRun++;
+    reviewCtl?.cancel?.();
+    reviewCtl = null;
+    panel.setHidden(false);
+    panel.toast(null);
+  }
+
+  async function captureShots(run) {
+    const { positions } = await sandboxCall({ type: "review-begin" });
+    const shots = [];
+    try {
+      for (const [i, y] of positions.entries()) {
+        if (run !== reviewRun || !overlayVisible || document.visibilityState !== "visible") throw new Error("cancelled");
+        panel.toast(`AI reviewer · capturing ${i + 1}/${positions.length}`, true);
+        await sandboxCall({ type: "review-scroll", y });
+        panel.setHidden(true);
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const shot = await chrome.runtime.sendMessage({ type: "capture" });
+        panel.setHidden(false);
+        if (!shot || shot.error) throw new Error(shot?.error || "Screenshot failed.");
+        shots.push(shot.dataUrl);
+        await sleep(550); // captureVisibleTab allows two calls per second
+      }
+    } finally {
+      panel.setHidden(false);
+      await sandboxCall({ type: "review-end" }).catch(() => {});
+    }
+    return shots;
+  }
+
+  async function reviewAndPolish({ code, data, prompt, model }) {
+    const run = ++reviewRun;
+    const stillCurrent = () => run === reviewRun && currentCode === code;
+    try {
+      panel.toast("AI reviewer · running layout checks", true);
+      const auditIssues = await sandboxCall({ type: "audit" });
+      if (!stillCurrent()) return;
+      const shots = await captureShots(run);
+      if (!stillCurrent()) return;
+
+      panel.toast("AI reviewer · studying the screenshots", true);
+      reviewCtl = {};
+      const review = parseReview(await stream(REVIEW_SYSTEM, reviewPrompt(prompt, data, auditIssues), model, () => {}, { images: shots, ctl: reviewCtl, maxTokens: 4000 }));
+      if (!stillCurrent()) return;
+
+      const mustFix = review.verdict === "fix" || auditIssues.some((i) => i.severity === "high");
+      const issues = [...auditIssues, ...review.issues].filter((i) => i.severity !== "low").slice(0, 10);
+      if (!mustFix || !issues.length) {
+        panel.toast("AI review passed · no layout issues found");
+        panel.status("AI review passed: no layout issues found.");
+        return;
+      }
+
+      panel.toast(`AI reviewer found ${issues.length} issue${issues.length === 1 ? "" : "s"} · polishing`, true);
+      reviewCtl = {};
+      const fixed = extractCode(await stream(SYSTEM, polishPrompt(prompt, data, code, issues), model, () => {}, { ctl: reviewCtl }));
+      if (!stillCurrent()) return;
+
+      try {
+        await render(fixed, data, { keepScroll: true });
+      } catch (err) {
+        await render(code, data, { keepScroll: true }).catch(() => {});
+        panel.toast("Polish attempt failed its checks · kept the current design");
+        panel.status(`Polish attempt failed: ${err.message.split("\n")[0]}`, true);
+        return;
+      }
+      currentCode = fixed;
+      await chrome.storage.local.set({
+        [RENDERER_KEY]: { code: fixed, prompt, model, style: extractStyle(fixed), created: Date.now(), reviewed: true },
+      });
+      panel.toast(`Polished · fixed ${issues.length} issue${issues.length === 1 ? "" : "s"} found by AI review`);
+      panel.status(`AI review fixed: ${issues.map((i) => i.problem).join(" · ").slice(0, 400)}`);
+    } catch (err) {
+      if (err.message === "cancelled" || run !== reviewRun) return;
+      panel.toast("AI review skipped");
+      panel.status(`AI review skipped: ${err.message.split("\n")[0]}`, true);
+    } finally {
+      if (run === reviewRun) reviewCtl = null;
+    }
+  }
+
   // ---------- generate ----------
   let busy = false;
   let currentCode = "";
@@ -174,6 +353,7 @@ Return the complete revised renderer, not a patch.`;
   async function generate(stylePrompt, remix = null) {
     if (busy) return;
     busy = true;
+    cancelReview();
     const started = Date.now();
     const { model } = await chrome.storage.local.get("model");
     const useModel = model || MODELS[0];
@@ -221,6 +401,8 @@ Return the complete corrected code in one \`\`\`js block.`;
       });
       panel.status(`${remix ? "Remix" : "Design"} done in ${Math.round((Date.now() - started) / 1000)} s. Hover a chapter to remix it. Alt+R toggles.`);
       panel.collapse();
+      const { review = true } = await chrome.storage.local.get("review");
+      if (review) reviewAndPolish({ code, data, prompt: currentPrompt, model: useModel });
     } catch (err) {
       C.stop();
       removeCover();
@@ -243,6 +425,7 @@ Return the complete corrected code in one \`\`\`js block.`;
   }
 
   async function applyCached(rec) {
+    cancelReview();
     try {
       currentCode = rec.code;
       currentPrompt = rec.prompt || "";
@@ -256,6 +439,7 @@ Return the complete corrected code in one \`\`\`js block.`;
   }
 
   async function resetSite() {
+    cancelReview();
     const all = await chrome.storage.local.get(null);
     await chrome.storage.local.remove(Object.keys(all).filter((k) => k.startsWith(`renderer:${page.site}:`) || k === SITE_KEY));
     setOverlay(false);
@@ -265,12 +449,14 @@ Return the complete corrected code in one \`\`\`js block.`;
   // ---------- panel ----------
   const panel = (() => {
     let root = null;
+    let hostEl = null;
     let codeTail = "";
+    let toastTimer = 0;
     const $ = (sel) => root.querySelector(sel);
 
     function mount() {
       if (root) return;
-      const hostEl = document.createElement("div");
+      hostEl = document.createElement("div");
       hostEl.style.cssText = "position:fixed;right:20px;bottom:20px;z-index:2147483647;";
       root = hostEl.attachShadow({ mode: "open" });
       root.innerHTML = `
@@ -297,8 +483,20 @@ Return the complete corrected code in one \`\`\`js block.`;
           .status.err { color: #c62828; }
           pre { background: #0d0d0d; color: #39ff88; font: 10px/1.35 ui-monospace, monospace; border-radius: 8px; padding: 8px; height: 84px; overflow: hidden; white-space: pre-wrap; word-break: break-all; margin: 8px 0 0; display: none; }
           .meta { font-size: 11px; color: #888; margin-top: 4px; }
+          .reviewrow { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: #333; cursor: pointer; }
+          .reviewrow input { width: auto; margin: 0; }
+          .wrap { position: relative; display: flex; flex-direction: column; align-items: flex-end; }
+          .toast { position: absolute; right: 0; bottom: calc(100% + 10px); width: max-content; max-width: 340px; background: #111; color: #fff;
+                   border-radius: 999px; padding: 9px 14px; font-size: 12px; font-weight: 700; box-shadow: 0 8px 26px rgba(0,0,0,.3);
+                   opacity: 0; transform: translateY(6px); transition: opacity .25s ease, transform .25s ease; pointer-events: none; }
+          .toast.on { opacity: 1; transform: none; }
+          .toast.busy::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%;
+                   background: #39ff88; animation: pulse 1s ease-in-out infinite; }
+          @keyframes pulse { 50% { opacity: .25; } }
+          @media (prefers-reduced-motion: reduce) { .toast, .toast.busy::before { transition: none; animation: none; } }
         </style>
         <div class="wrap">
+          <div class="toast" role="status" aria-live="polite"></div>
           <button class="pill">✦ Remodel</button>
           <div class="card">
             <h1>✦ Remodel <button class="close" title="Close">×</button></h1>
@@ -315,6 +513,7 @@ Return the complete corrected code in one \`\`\`js block.`;
               <select class="model">${MODELS.map((m) => `<option>${m}</option>`).join("")}</select>
               <button class="ghost keytoggle">Change API key</button>
             </div>
+            <label class="reviewrow"><input type="checkbox" class="review" checked> AI visual review after each design</label>
             <div class="row"><button class="go">Remodel this page</button></div>
             <div class="row">
               <button class="ghost toggle">Original ⇄ Remodel (Alt+R)</button>
@@ -362,6 +561,10 @@ Return the complete corrected code in one \`\`\`js block.`;
         else status("Describe how this chapter should change.", true);
       };
       $(".model").onchange = () => chrome.storage.local.set({ model: $(".model").value });
+      $(".review").onchange = () => {
+        chrome.storage.local.set({ review: $(".review").checked });
+        if (!$(".review").checked) cancelReview();
+      };
       $(".savekey").onclick = async () => {
         const apiKey = $(".key").value.trim();
         if (!apiKey) return status("Paste an API key first.", true);
@@ -371,12 +574,13 @@ Return the complete corrected code in one \`\`\`js block.`;
         $(".keytoggle").textContent = "Change API key";
         status("API key updated.");
       };
-      chrome.storage.local.get(["apiKey", "model", SITE_KEY]).then((s) => {
+      chrome.storage.local.get(["apiKey", "model", "review", SITE_KEY]).then((s) => {
         if (!s.apiKey) {
           $(".keytoggle").textContent = "Add API key";
           showKey();
         }
         if (s.model) $(".model").value = s.model;
+        $(".review").checked = s.review !== false;
         if (s[SITE_KEY]?.prompt) $(".prompt").value = s[SITE_KEY].prompt;
       });
       updateToggle();
@@ -419,8 +623,20 @@ Return the complete corrected code in one \`\`\`js block.`;
       codeTail = "";
     }
     function updateToggle() { if (root) $(".toggle").disabled = !overlay; }
+    // Busy toasts stay until replaced; others fade after a few seconds. toast(null) hides it.
+    function toast(text, isBusy = false) {
+      mount();
+      clearTimeout(toastTimer);
+      const el = $(".toast");
+      if (!text) return el.classList.remove("on");
+      el.textContent = text;
+      el.classList.toggle("busy", isBusy);
+      el.classList.add("on");
+      if (!isBusy) toastTimer = setTimeout(() => el.classList.remove("on"), 5000);
+    }
+    function setHidden(hidden) { if (hostEl) hostEl.style.visibility = hidden ? "hidden" : ""; }
 
-    return { mount, expand, collapse, showKey, openRemix, status, progress, finishProgress, updateToggle };
+    return { mount, expand, collapse, showKey, openRemix, status, progress, finishProgress, updateToggle, toast, setHidden };
   })();
 
   chrome.runtime.onMessage.addListener((msg) => {
