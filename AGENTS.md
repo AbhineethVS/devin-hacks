@@ -75,6 +75,9 @@ Stay inside the folders your task names. Keep changes elsewhere minimal and call
 - **Musical safety:** every pitched note comes from the active pack's scale.
 - **No secrets** in code, logs, PR descriptions or `.env.example`.
 
+## Human preferences
+- After every card: start the dev server (`npm run dev`, http://localhost:5173) and give the human a short manual test checklist for that card.
+
 ## Known gotchas (learned the hard way; see skills/)
 - Tone mono synths **throw** if two notes start at the same instant → `skills/tone-scheduling`.
 - `let` variables referenced before their declaration throw (temporal dead zone) inside value probes → `skills/execution-tracing`.
