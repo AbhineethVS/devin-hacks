@@ -45,7 +45,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     await chrome.tabs.sendMessage(tab.id, { type: "toggle-panel" });
   } catch {
     try {
-      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["extractors.js", "cursors.js", "content.js"] });
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["extractors.js", "cursors.js", "reskin.js", "content.js"] });
       await new Promise((resolve) => setTimeout(resolve, 300));
       await chrome.tabs.sendMessage(tab.id, { type: "toggle-panel" });
     } catch {
@@ -65,10 +65,62 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     return;
   }
+  if (msg.type === "font") {
+    googleFont(String(msg.family || "")).then((faces) => sendResponse({ faces }), (err) => sendResponse({ faces: [], error: String(err?.message || err) }));
+    return true;
+  }
   if (msg.type !== "capture") return;
   capture(sender.tab).then(sendResponse, (err) => sendResponse({ error: String(err?.message || err) }));
   return true;
 });
+
+// Fetches the Latin subset of a Google Fonts family and returns the font files as base64, so the page can
+// register them from bytes even when its content-security policy blocks fonts.googleapis.com.
+const fontCache = new Map();
+function googleFont(family) {
+  if (!/^[A-Za-z0-9 ]{2,40}$/.test(family)) return Promise.resolve([]);
+  if (!fontCache.has(family)) {
+    fontCache.set(family, loadGoogleFont(family).catch((err) => {
+      fontCache.delete(family);
+      throw err;
+    }));
+  }
+  return fontCache.get(family);
+}
+
+async function loadGoogleFont(family) {
+  const name = family.trim().replace(/ +/g, "+");
+  let cssText = "";
+  for (const axes of [":ital,wght@0,400;0,500;0,700;1,400", ":wght@400;500;700", ":wght@400;700", ""]) {
+    const res = await fetch(`https://fonts.googleapis.com/css2?family=${name}${axes}&display=swap`);
+    if (res.ok) {
+      cssText = await res.text();
+      break;
+    }
+  }
+  if (!cssText) throw new Error(`Google Fonts has no family "${family}".`);
+  const faces = [];
+  const files = new Map();
+  for (const block of cssText.split("/*").slice(1)) {
+    if (block.slice(0, block.indexOf("*/")).trim() !== "latin") continue;
+    const url = block.match(/url\((https:[^)]+)\)/)?.[1];
+    if (!url) continue;
+    if (!files.has(url)) files.set(url, fetch(url).then((r) => r.arrayBuffer()).then(toBase64));
+    faces.push({
+      weight: block.match(/font-weight:\s*([\d ]+);/)?.[1]?.trim() || "400",
+      style: block.match(/font-style:\s*(\w+)/)?.[1] || "normal",
+      data: await files.get(url),
+    });
+  }
+  return faces;
+}
+
+function toBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(binary);
+}
 
 async function capture(tab) {
   if (!tab?.id) throw new Error("No tab to capture.");

@@ -5,6 +5,7 @@
   window.__remodelLoaded = true;
   const X = window.RemodelExtract;
   const C = window.RemodelCursors;
+  const R = window.RemodelReskin;
   let booted = false;
 
   function boot(page) {
@@ -379,9 +380,9 @@ When a DESIGN REFERENCE section is provided, it comes from a curated design libr
   });
 
   window.addEventListener("keydown", (event) => {
-    if (event.altKey && event.key.toLowerCase() === "r" && overlay) {
+    if (event.altKey && event.key.toLowerCase() === "r" && (overlay || R.applied)) {
       event.preventDefault();
-      setOverlay(!overlayVisible);
+      toggleView();
     }
   }, true);
 
@@ -717,6 +718,115 @@ ${await designReference(notes, data)}`;
     }
   }
 
+  // ---------- reskin: restyle the live page, keep its layout ----------
+  const RESKIN_SYSTEM = `You are a senior brand and visual designer. You RESKIN a live website in place. Its layout, spacing, sizes, content and behaviour stay exactly as they are; you choose a new visual identity that is painted on top: palette, typefaces, corner shapes, shadows and surface treatment.
+
+A deterministic engine applies your spec. It maps every original colour onto your palette by role and relative lightness: page background → bg; panels and cards lighter or darker than the page → surface or tints; body text → text; grey or secondary text → muted; borders → border; the site's dominant brand hue → primary (links → link); its second hue → accent. It fixes text contrast automatically, and styles cards, buttons, inputs, headings, badges and links with your shapes and fonts. You cannot move or resize anything.
+
+Return ONLY JSON, no prose:
+{
+  "name": "2-4 word name for the look",
+  "thesis": "one sentence: the concept, and the generic default it deliberately avoids",
+  "palette": { "bg": "#hex", "surface": "#hex", "text": "#hex", "muted": "#hex", "border": "#hex", "primary": "#hex", "onPrimary": "#hex", "accent": "#hex", "link": "#hex" },
+  "fonts": { "heading": "Google Fonts family", "body": "Google Fonts family" },
+  "heading": { "weight": 400, "case": "none" | "uppercase", "tracking": "-0.02em", "style": "normal" | "italic" },
+  "radius": { "card": 0-32, "button": 0-999, "input": 0-20, "badge": 0-999 },
+  "card": { "shadow": "a CSS box-shadow or none", "ring": true | false },
+  "button": { "shadow": "a CSS box-shadow or none" },
+  "link": { "underline": true | false }
+}
+
+RULES
+- The style request decides the identity. Commit to it: a reskin that only nudges the original is a failure. Dark looks are welcome; then bg is dark, text light, and muted and border sit between.
+- Legibility is not negotiable: text and muted on bg and surface, and onPrimary on primary, must pass WCAG AA.
+- bg and surface should differ subtly so cards read as cards, unless the style is deliberately flat.
+- primary carries the identity (buttons, links, brand areas). accent is a second voice, used sparingly; it may equal primary.
+- Fonts must be real Google Fonts families. Body text must stay comfortable at small sizes: a sturdy sans or text serif with ordinary width, because the layout was sized for the original font. Expressive display faces go in heading only. Avoid Inter, Roboto, Arial and system fonts unless the style demands neutrality.
+- Shapes follow the concept: sharp 0 radius for brutalist or editorial looks, soft large radii for friendly ones. Shadows: subtle, hard offset (e.g. "4px 4px 0 #000"), or none, as the style implies.`;
+
+  function reskinPrompt(stylePrompt, data, census, designRef) {
+    return `STYLE REQUEST: "${stylePrompt}"
+SITE: ${data.brand?.name || location.hostname} · ${location.href}
+TITLE: ${data.title || document.title}
+
+ORIGINAL LOOK (measured from the live page):
+${JSON.stringify(census, null, 1)}
+
+A screenshot of the original page is attached.${designRef ? `\n\nDESIGN REFERENCE (UI UX Pro Max library matches; ground the palette and font pairing in these where they fit):\n${designRef}` : ""}`;
+  }
+
+  function parseSpec(text) {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("The designer did not return a theme.");
+    const spec = JSON.parse(match[0]);
+    if (!spec.palette || typeof spec.palette !== "object") throw new Error("The theme had no palette.");
+    return spec;
+  }
+
+  const fontLoads = new Map();
+  function loadWebFont(family) {
+    if (!fontLoads.has(family)) {
+      fontLoads.set(family, (async () => {
+        const res = await chrome.runtime.sendMessage({ type: "font", family });
+        return (res?.faces || []).map((f) => ({
+          weight: f.weight,
+          style: f.style,
+          buffer: Uint8Array.from(atob(f.data), (ch) => ch.charCodeAt(0)).buffer,
+        }));
+      })().catch(() => []));
+    }
+    return fontLoads.get(family);
+  }
+
+  const themeKey = (stylePrompt) => `theme:${promptHash(stylePrompt)}`;
+  let genericMode = "reskin";
+
+  async function applyTheme(rec) {
+    setOverlay(false);
+    const result = await R.apply(rec.spec, loadWebFont);
+    panel.updateToggle();
+    return result;
+  }
+
+  async function reskin(stylePrompt, useModel, started) {
+    R.remove();
+    setOverlay(false);
+    removeCover();
+    const key = themeKey(stylePrompt);
+    const saved = (await chrome.storage.local.get(key))[key];
+    if (saved && saved.host !== location.hostname && offeredReuse !== key) {
+      offeredReuse = key;
+      const result = await applyTheme(saved);
+      currentPrompt = stylePrompt;
+      await chrome.storage.local.set({ [SITE_KEY]: { enabled: true, prompt: stylePrompt, mode: "reskin" } });
+      panel.toast(`Instant · reused “${saved.spec.name}” from ${saved.host}`);
+      panel.status(`Reused the “${saved.spec.name}” skin from ${saved.host} in ${((Date.now() - started) / 1000).toFixed(1)} s, restyling ${result.count} elements. Press Reskin again for a fresh one.`);
+      return;
+    }
+    const data = await extractPageData();
+    panel.status(`Measuring ${data.brand?.name || location.hostname}'s colours, type and components…`);
+    const census = R.analyze();
+    const shots = (await captureOriginalShots()).slice(0, 1);
+    C.start();
+    panel.status(`Designing a new identity with ${useModel}…`);
+    const user = reskinPrompt(stylePrompt, data, census, await designReference(stylePrompt, data));
+    const text = await stream(RESKIN_SYSTEM, user, useModel, (m) => panel.progress(m.delta, m.length, started), { images: shots, maxTokens: 3000 });
+    const spec = parseSpec(text);
+    await C.flourish();
+    const rec = { spec, prompt: stylePrompt, model: useModel, host: location.hostname, created: Date.now() };
+    const result = await applyTheme(rec);
+    currentPrompt = stylePrompt;
+    await chrome.storage.local.set({ [key]: rec, [SITE_KEY]: { enabled: true, prompt: stylePrompt, mode: "reskin" } });
+    panel.status(`“${result.spec.name}” applied in ${Math.round((Date.now() - started) / 1000)} s: ${result.count} elements restyled, layout untouched. Alt+R toggles.`);
+    panel.toast(`Reskinned · ${result.spec.name}`);
+    panel.collapse();
+  }
+
+  function toggleView() {
+    if (R.applied) R.setEnabled(!R.enabled);
+    else if (overlay) setOverlay(!overlayVisible);
+  }
+
   // ---------- generate ----------
   let busy = false;
   let currentCode = "";
@@ -732,6 +842,8 @@ ${await designReference(notes, data)}`;
     try {
       const { model } = await chrome.storage.local.get("model");
       useModel = model || MODELS[0];
+      if (page.generic && !remix && genericMode === "reskin") return await reskin(stylePrompt, useModel, started);
+      R.remove();
       const data = await extractPageData();
       if (page.generic && (!remix || !rendererKey)) {
         rendererKey = genericKey(data.archetype, remix ? (currentPrompt || stylePrompt) : stylePrompt);
@@ -785,7 +897,7 @@ Return the complete corrected code in one \`\`\`js block.`;
       currentPrompt = remix ? (currentPrompt || stylePrompt) : stylePrompt;
       await chrome.storage.local.set({
         [rendererKey]: rendererRecord(code, currentPrompt, useModel),
-        [SITE_KEY]: { enabled: true, prompt: currentPrompt },
+        [SITE_KEY]: { enabled: true, prompt: currentPrompt, mode: "rebuild" },
       });
       panel.status(`${remix ? "Remix" : "Design"} done in ${Math.round((Date.now() - started) / 1000)} s. Hover a chapter to remix it. Alt+R toggles.`);
       panel.collapse();
@@ -833,7 +945,7 @@ Return the complete corrected code in one \`\`\`js block.`;
     setOverlay(true);
     currentCode = rec.code;
     currentPrompt = stylePrompt;
-    await chrome.storage.local.set({ [SITE_KEY]: { enabled: true, prompt: stylePrompt } });
+    await chrome.storage.local.set({ [SITE_KEY]: { enabled: true, prompt: stylePrompt, mode: "rebuild" } });
     panel.toast(`Instant · reused the ${data.archetype} design from ${rec.host}`);
     panel.status(`Reused your ${data.archetype} design from ${rec.host} in ${((Date.now() - started) / 1000).toFixed(1)} s, with ${data.brand.name}'s branding. Press Remodel again for a fresh design.`);
     panel.collapse();
@@ -859,6 +971,8 @@ Return the complete corrected code in one \`\`\`js block.`;
     const all = await chrome.storage.local.get(null);
     await chrome.storage.local.remove(Object.keys(all).filter((k) => k.startsWith(`renderer:${page.site}:`) || k === SITE_KEY));
     setOverlay(false);
+    R.remove();
+    panel.updateToggle();
     panel.status(page.generic
       ? "Reset. This site is back to normal; saved styles stay available for other sites."
       : "Reset. This site is back to normal.");
@@ -953,6 +1067,12 @@ Return the complete corrected code in one \`\`\`js block.`;
     .btn.subtle { border-color: transparent; background: var(--sunk); }
     .btn.subtle:hover { border-color: var(--line-strong); }
 
+    .mode { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--sunk); border: 1px solid var(--line); }
+    .modebtn { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; border: 0; border-radius: 10px; padding: 8px 10px; background: none; text-align: left;
+               font-size: 13px; font-weight: 650; color: var(--muted); transition: background .15s, color .15s, box-shadow .15s; }
+    .modebtn small { font-size: 11px; font-weight: 500; color: var(--muted); }
+    .modebtn.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .1), 0 0 0 1px var(--line); }
+    .modebtn:hover:not(.on) { color: var(--ink); }
     .chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 24px), transparent); }
     .chips::-webkit-scrollbar { display: none; }
     .chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; transition: all .15s; }
@@ -1063,6 +1183,10 @@ Return the complete corrected code in one \`\`\`js block.`;
                 </div>
                 <p class="hint">Stored only in this browser's extension storage.</p>
               </div>
+              ${page.generic ? `<div class="mode" role="radiogroup" aria-label="Mode">
+                <button class="modebtn on" role="radio" aria-checked="true" data-mode="reskin">Reskin<small>New look · layout untouched</small></button>
+                <button class="modebtn" role="radio" aria-checked="false" data-mode="rebuild">Reimagine<small>New layout · experimental</small></button>
+              </div>` : ""}
               <label class="label" for="rm-prompt">Describe the redesign</label>
               <div class="composer">
                 <textarea class="prompt" id="rm-prompt" placeholder="A calm editorial magazine… or jot notes about the site and press Suggest."></textarea>
@@ -1102,7 +1226,7 @@ Return the complete corrected code in one \`\`\`js block.`;
       loadFonts();
 
       const THEMES = { auto: ["◐", "Theme: follow system"], light: ["☀", "Theme: light"], dark: ["☾", "Theme: dark"] };
-      const applyTheme = (theme) => {
+      const applyPanelTheme = (theme) => {
         const t = THEMES[theme] ? theme : "auto";
         $(".wrap").dataset.theme = t;
         $(".theme").textContent = THEMES[t][0];
@@ -1111,13 +1235,27 @@ Return the complete corrected code in one \`\`\`js block.`;
       $(".theme").onclick = () => {
         const order = Object.keys(THEMES);
         const next = order[(order.indexOf($(".wrap").dataset.theme) + 1) % order.length];
-        applyTheme(next);
+        applyPanelTheme(next);
         chrome.storage.local.set({ panelTheme: next });
       };
       $(".card").addEventListener("keydown", (e) => {
         if (e.key === "Escape") collapse();
         if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && e.target.classList.contains("prompt")) $(".go").click();
       });
+
+      const setMode = (mode) => {
+        genericMode = mode === "rebuild" ? "rebuild" : "reskin";
+        root.querySelectorAll(".modebtn").forEach((b) => {
+          const on = b.dataset.mode === genericMode;
+          b.classList.toggle("on", on);
+          b.setAttribute("aria-checked", String(on));
+        });
+        if (page.generic) $(".go").textContent = genericMode === "reskin" ? "Reskin this page" : "Reimagine this page";
+      };
+      root.querySelectorAll(".modebtn").forEach((b) => (b.onclick = () => {
+        setMode(b.dataset.mode);
+        chrome.storage.local.set({ genericMode });
+      }));
 
       $(".pill").onclick = expand;
       $(".close").onclick = collapse;
@@ -1128,7 +1266,7 @@ Return the complete corrected code in one \`\`\`js block.`;
         else status("Type a style or pick one.", true);
       };
       $(".suggest").onclick = () => suggestPrompts($(".prompt").value.trim());
-      $(".toggle").onclick = () => setOverlay(!overlayVisible);
+      $(".toggle").onclick = toggleView;
       $(".reset").onclick = resetSite;
       $(".keytoggle").onclick = () => {
         const keybox = $(".keybox");
@@ -1160,8 +1298,9 @@ Return the complete corrected code in one \`\`\`js block.`;
         $(".keytoggle").textContent = "Change API key";
         status("API key updated.");
       };
-      chrome.storage.local.get(["apiKey", "model", "review", "panelTheme", SITE_KEY]).then((s) => {
-        applyTheme(s.panelTheme);
+      chrome.storage.local.get(["apiKey", "model", "review", "panelTheme", "genericMode", SITE_KEY]).then((s) => {
+        applyPanelTheme(s.panelTheme);
+        setMode(s[SITE_KEY]?.mode || s.genericMode || "reskin");
         if (!s.apiKey) {
           $(".keytoggle").textContent = "Add API key";
           showKey();
@@ -1215,7 +1354,7 @@ Return the complete corrected code in one \`\`\`js block.`;
       $(".ticker").style.display = "none";
       codeTail = "";
     }
-    function updateToggle() { if (root) $(".toggle").disabled = !overlay; }
+    function updateToggle() { if (root) $(".toggle").disabled = !overlay && !R.applied; }
     // Busy toasts stay until replaced; others fade after a few seconds. toast(null) hides it.
     function toast(text, isBusy = false) {
       mount();
@@ -1268,6 +1407,18 @@ Return the complete corrected code in one \`\`\`js block.`;
     if (page.generic) {
       if (!site?.enabled || !site.prompt) {
         onReady(() => panel.mount());
+        return;
+      }
+      if (site.mode !== "rebuild") {
+        onReady(async () => {
+          panel.mount();
+          const key = themeKey(site.prompt);
+          const rec = (await chrome.storage.local.get(key))[key];
+          currentPrompt = site.prompt;
+          if (!rec) return;
+          await pageLoaded();
+          applyTheme(rec).catch((err) => panel.status(`Saved skin failed: ${err.message}`, true));
+        });
         return;
       }
       showCover();

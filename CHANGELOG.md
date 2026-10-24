@@ -54,4 +54,18 @@
   - A progress bar shows while a model call runs, and the main buttons are disabled meanwhile. Esc closes the panel.
   - It is responsive: it fits within the viewport down to a 390 px phone width or a 560 px-tall window.
   - Checked with `tools/panel-test.mjs` (loads the real extension) on books.toscrape.com in light, dark and 390 px layouts, and on dark-mode GitHub: no page errors, and the card fits the viewport in every case.
+- Added **Reskin**, now the default mode for generic websites. It restyles the live page in place and never changes its layout. **Reimagine**, the full rebuild, remains as an experimental option, and Wikipedia, Hacker News and IRCTC keep their rebuilds.
+  - The model returns a small JSON theme (palette, fonts, shapes, shadows), not code. `extension/reskin.js` measures the page's colours, fonts and components, then applies the theme as attribute-scoped CSS:
+    - colours are remapped by role and lightness;
+    - text contrast is corrected to WCAG AA;
+    - gradients are recoloured with their alpha kept;
+    - cards, buttons, inputs, headings, badges and links get the theme's shapes.
+  - A mutation observer styles content that arrives later.
+  - Google Fonts are fetched by the service worker and registered from bytes. Each is metric-matched to the font it replaces (`size-adjust` and ascent/descent overrides), so text wraps almost exactly as before.
+  - Original ⇄ Remodel (Alt+R) toggles the skin, and Reset removes every attribute and rule.
+  - Verified end to end with gpt-5.4-mini:
+    - books.toscrape.com became "Midnight Brass Club" in 10 s, restyling 246 elements.
+    - python.org became "Pink Ink Brutalism" in 10 s, then that skin applied to quotes.toscrape.com in 0.1 s.
+  - The panel offers a Reskin / Reimagine switch on generic sites.
+  - Added `tools/reskin-test.mjs`, which applies a fixed theme without API calls and measures block-level layout shift. Without a font change, nothing moves. With fonts: books.toscrape.com changed 3 of 529 boxes, GitHub moved 25 of 1,500, and Wikipedia grew by 0.6% from re-wrapped lines.
 - Added a layout audit: on pages at least 1100 px wide, a tall section whose content spans under 62% of the width, all on one side, is reported as high severity so the review pass repairs it. `tools/inspect-render.mjs` now prints the audit. The check flagged a saved books.toscrape.com renderer whose product grid filled only 56% of a 1440 px page.

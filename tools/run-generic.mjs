@@ -21,7 +21,7 @@ const browser = await puppeteer.launch({
   pipe: true,
   enableExtensions: [extPath],
   defaultViewport: { width: 1440, height: 900 },
-  userDataDir: path.resolve(here, "../out/profile-generic"),
+  userDataDir: path.resolve(here, `../out/profile-generic-${process.pid}`),
 });
 const swTarget = await browser.waitForTarget((t) => t.type() === "service_worker" && t.url().endsWith("background.js"), { timeout: 15000 });
 const worker = await swTarget.worker();
@@ -57,7 +57,7 @@ for (const [i, url] of urls.entries()) {
   let s = "";
   for (let k = 0; k < 150; k++) {
     s = await status();
-    if (/done in|^Error|^Reused|failed/i.test(s)) break;
+    if (/done in|applied in|^Error|^Reused|failed/i.test(s)) break;
     await sleep(2000);
   }
   console.log(`[${tag}] ${((Date.now() - t0) / 1000).toFixed(1)}s → ${s.slice(0, 260)}`);

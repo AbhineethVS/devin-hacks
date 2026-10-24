@@ -6,6 +6,7 @@ Remodel is an AI-native browser extension that turns a page's real content into 
 
 ## Current prototype
 
+- Reskins any website in about 10 seconds without breaking it. The default mode keeps the live page and its layout and repaints it: new palette, Google Fonts metric-matched to the originals, corner shapes and shadows. Logins, menus and single-page-app navigation keep working, and a skin made on one site applies instantly to any other.
 - Rebuilds any website from a prompt. The public IRCTC homepage, Wikipedia articles, and Hacker News pages have specialised extractors; every other site uses a generic extractor that reads sections, cards, forms, buttons and the site's brand.
 - Writes the prompt for you: **Suggest prompts for this site** studies a screenshot of the page and its content, optionally researches the site on the web, and proposes three art directions. Notes you type first (for example "for kids") shape all three.
 - Designs with real design knowledge: each request pulls matching styles, font pairings, palettes, page patterns and UX rules from the [UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) data set, and the model follows design-judgement rules adapted from Anthropic's [frontend-design](https://github.com/anthropics/skills) skill. Licences are in `third_party/`.

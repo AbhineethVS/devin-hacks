@@ -57,6 +57,19 @@ Rules:
 - **Cache:** generic renderers are stored under `renderer:generic:<archetype>:<hash(style prompt)>` with `{ code, prompt, model, style, thesis, host, archetype }`. A renderer whose `host` differs from the current site is applied instantly once; pressing Remodel again with the same prompt generates a fresh one.
 - **Site preference:** `site:<hostname>` stores `{ enabled, prompt }`. A generic site auto-applies only when it is enabled; the panel pill is mounted on every page either way.
 
+## Reskin
+
+The model returns only a JSON theme spec; `extension/reskin.js` turns it into CSS. The model never writes CSS.
+
+- **Spec:** `{ name, thesis, palette: { bg, surface, text, muted, border, primary, onPrimary, accent, link }, fonts: { heading, body }, heading: { weight, case, tracking, style }, radius: { card, button, input, badge }, card: { shadow, ring }, button: { shadow }, link: { underline } }`.
+  - Colours must pass `CSS.supports("color")`, shadows `CSS.supports("box-shadow")` and font names `^[A-Za-z0-9 ]{2,40}$`. Radii are clamped. Anything invalid falls back to a derived default.
+  - `heading.case` and `heading.tracking` are accepted but not applied, because they change text width.
+- **Written properties:** only `color`, `-webkit-text-fill-color`, `background-color`, gradient `background-image` (colour stops remapped, alpha kept), `border-color`, `border-radius`, `box-shadow`, `font-family`, `font-weight` (headings with a matched font only), `font-style`, link `text-decoration-line`, and an input focus `outline`. Width, height, margin, padding, display, position and font size are never written.
+- **Element hooks:** the engine writes `data-rm-k="<n>"` (a shared colour rule), `data-rm-role="card|button|input|heading|badge|link"` and `data-rm-font` on page elements, and `data-rm-skin` on `<html>`. `remove()` deletes all of them along with the injected `<style data-remodel-ui>`. Elements marked `data-remodel-ui` are skipped.
+- **Colour mapping:** neutral colours map by lightness relative to the original page background and body text. Chromatic colours map by hue rank: the dominant hue goes to `primary` (text to `link`), the others to `accent`. Very light and very dark chromatic colours become tints. Text is pushed to WCAG AA (3:1 for large text) against its new effective background.
+- **Fonts:** the content script sends `{ type: "font", family }`; the service worker answers `{ faces: [{ weight, style, data }] }`, with `data` base64 Latin-subset WOFF2 from Google Fonts. Each family is registered twice: once raw, once with `size-adjust` and ascent/descent overrides measured against the font it replaces.
+- **Storage:** themes are stored under `theme:<hash(style prompt)>` as `{ spec, prompt, model, host, created }`. `site:<hostname>` gains `mode: "reskin" | "rebuild"`. The global default mode is `genericMode`. A theme whose `host` differs is applied instantly once; pressing Reskin again generates a fresh one.
+
 ## Wikipedia additions
 
 Article data includes aggregate `stats`. Each section includes `index`, `wordCount`, `imageCount`, and extracted `years` for visual composition. These are presentation hints; original blocks remain the source of truth.

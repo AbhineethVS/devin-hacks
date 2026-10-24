@@ -13,7 +13,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["extractors.js", "cursors.js", "content.js"],
+      "js": ["extractors.js", "cursors.js", "reskin.js", "content.js"],
       "run_at": "document_start"
     }
   ],
