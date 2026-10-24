@@ -38,4 +38,9 @@
   - Anthropic's frontend-design skill (Apache-2.0) is condensed into a **DESIGN JUDGEMENT** section of the renderer system prompt. It covers grounding in the subject, typography, structure that carries information, a list of AI-default tells to avoid and restraint in motion. The `THESIS` comment now ends with an `AVOIDED:` line naming the default it rejected.
 - Banned meta copy. Renderers had been writing text about the redesign itself ("a graphic-novel frame for listings", "Panel one"); the prompt now forbids it and the reviewer treats it as high severity.
 - Capped images are now centred in the frame the renderer drew for them. A cap only applies when an image is more than 15% over its limit.
+- The three agent cursors now visibly work on the page while a design is generated, instead of only roaming.
+  - Kuttan (typography) drag-selects a real heading or link and retypes it letter by letter in a new typeface, with a blinking caret.
+  - Ammu (layout) shows a 12-column grid, grabs a real block and drags and resizes it to snap to a column span.
+  - Chinnu (colour) eyedrops a real colour from the page, mixes a new one and paints it across the element.
+  - Every effect is an overlay. The page's own DOM is never changed, and the effects start only after the original-page screenshots are taken. `tools/cursors-test.mjs` checked this on Wikipedia, books.toscrape.com and Hacker News: no page errors and an unchanged DOM.
 - Added a layout audit: on pages at least 1100 px wide, a tall section whose content spans under 62% of the width, all on one side, is reported as high severity so the review pass repairs it. `tools/inspect-render.mjs` now prints the audit. The check flagged a saved books.toscrape.com renderer whose product grid filled only 56% of a 1440 px page.
