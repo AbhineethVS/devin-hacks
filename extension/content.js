@@ -668,6 +668,7 @@ Return ONLY JSON:
   async function suggestPrompts(notes) {
     if (busy) return;
     busy = true;
+    panel.setBusy(true);
     const wasVisible = overlayVisible;
     try {
       const { model } = await chrome.storage.local.get("model");
@@ -712,6 +713,7 @@ ${await designReference(notes, data)}`;
       if (/HTTP 401|API key/i.test(err.message)) panel.showKey();
     } finally {
       busy = false;
+      panel.setBusy(false);
     }
   }
 
@@ -723,6 +725,7 @@ ${await designReference(notes, data)}`;
   async function generate(stylePrompt, remix = null) {
     if (busy) return;
     busy = true;
+    panel.setBusy(true);
     cancelReview();
     const started = Date.now();
     let useModel = MODELS[0];
@@ -809,6 +812,7 @@ Return the complete corrected code in one \`\`\`js block.`;
       if (/HTTP 401|API key|token_invalidated|expired_secret_key/i.test(err.message)) panel.showKey();
     } finally {
       busy = false;
+      panel.setBusy(false);
       panel.finishProgress();
     }
   }
@@ -861,6 +865,167 @@ Return the complete corrected code in one \`\`\`js block.`;
   }
 
   // ---------- panel ----------
+  // Shadow roots ignore @font-face, so the bundled fonts are registered on the document.
+  // They are loaded from bytes so that page CSP font-src rules cannot block them.
+  let fontsLoaded = false;
+  function loadFonts() {
+    if (fontsLoaded || !window.FontFace) return;
+    fontsLoaded = true;
+    const faces = [
+      ["Remodel Sans", "inter.woff2", { weight: "100 900" }],
+      ["Remodel Serif", "instrument-serif.woff2", {}],
+      ["Remodel Serif", "instrument-serif-italic.woff2", { style: "italic" }],
+      ["Remodel Mono", "jetbrains-mono.woff2", { weight: "100 800" }],
+    ];
+    for (const [family, file, desc] of faces) {
+      fetch(chrome.runtime.getURL(`fonts/${file}`))
+        .then((r) => r.arrayBuffer())
+        .then((buf) => new FontFace(family, buf, desc).load())
+        .then((face) => document.fonts.add(face))
+        .catch(() => {});
+    }
+  }
+
+  const PANEL_CSS = `
+    :host { all: initial; }
+    .wrap {
+      --bg: #fbfaf7; --surface: #ffffff; --sunk: #f3f1ec; --ink: #17161c; --muted: #6d6b77; --line: #e6e2da; --line-strong: #cfcac0;
+      --accent: #5b4cf5; --accent-ink: #ffffff; --ring: rgba(91, 76, 245, .28); --err: #c4342d; --shadow: 0 24px 60px -12px rgba(23, 22, 28, .28), 0 2px 6px rgba(23, 22, 28, .08);
+      --grad: linear-gradient(135deg, #ff4d8d 0%, #8b5cff 50%, #2f6bff 100%);
+      --sans: "Remodel Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --serif: "Remodel Serif", Georgia, "Times New Roman", serif;
+      --mono: "Remodel Mono", ui-monospace, Consolas, monospace;
+      color-scheme: light;
+    }
+    .wrap[data-theme="dark"] {
+      --bg: #141418; --surface: #1c1c22; --sunk: #111115; --ink: #f2f0ea; --muted: #9c9aa8; --line: #2c2c35; --line-strong: #3d3d48;
+      --accent: #8f84ff; --accent-ink: #0f0e14; --ring: rgba(143, 132, 255, .35); --err: #ff7b72; --shadow: 0 24px 60px -12px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .04);
+      color-scheme: dark;
+    }
+    @media (prefers-color-scheme: dark) {
+      .wrap[data-theme="auto"] {
+        --bg: #141418; --surface: #1c1c22; --sunk: #111115; --ink: #f2f0ea; --muted: #9c9aa8; --line: #2c2c35; --line-strong: #3d3d48;
+        --accent: #8f84ff; --accent-ink: #0f0e14; --ring: rgba(143, 132, 255, .35); --err: #ff7b72; --shadow: 0 24px 60px -12px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .04);
+        color-scheme: dark;
+      }
+    }
+    * { box-sizing: border-box; font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+    button, textarea, input, select { font: inherit; color: var(--ink); }
+    button { cursor: pointer; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .wrap { position: relative; display: flex; flex-direction: column; align-items: flex-end; color: var(--ink); font-size: 13px; line-height: 1.45; }
+    .mark { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; background: var(--grad); color: #fff; font-size: 12px; line-height: 1; flex: none; }
+    .mark.big { width: 34px; height: 34px; border-radius: 10px; font-size: 17px; box-shadow: 0 6px 16px -4px rgba(139, 92, 255, .55); }
+
+    .pill { display: inline-flex; align-items: center; gap: 9px; padding: 8px 16px 8px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
+            font-weight: 650; font-size: 14px; letter-spacing: -.01em; box-shadow: var(--shadow); transition: transform .2s ease, box-shadow .2s ease; }
+    .pill:hover { transform: translateY(-2px); }
+    .open .pill { display: none; }
+
+    .card { display: none; flex-direction: column; width: min(400px, calc(100vw - 24px)); max-height: min(760px, calc(100vh - 40px)); background: var(--bg);
+            border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; transform-origin: bottom right; }
+    .open .card { display: flex; animation: rise .28s cubic-bezier(.2, .8, .2, 1); }
+    @keyframes rise { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+
+    header { display: flex; align-items: center; gap: 11px; padding: 14px 14px 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+    .titles { flex: 1; min-width: 0; }
+    h1 { margin: 0; font: 400 25px/1 var(--serif); letter-spacing: -.01em; }
+    .meta { margin-top: 3px; font: 500 11px/1.2 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .icon { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid transparent; border-radius: 10px; background: none; color: var(--muted); font-size: 18px; line-height: 1; }
+    .icon:hover { background: var(--sunk); color: var(--ink); border-color: var(--line); }
+
+    .body { padding: 14px 16px 16px; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 10px; }
+    .label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .01em; }
+    .hint { margin: 0; font-size: 11px; color: var(--muted); }
+
+    .field, .composer { width: 100%; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); transition: border-color .15s, box-shadow .15s; }
+    .field { padding: 9px 11px; font-size: 13px; }
+    .field:focus, .composer:focus-within { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--ring); }
+    .composer { display: flex; flex-direction: column; }
+    .composer textarea { width: 100%; min-height: 78px; max-height: 40vh; padding: 11px 12px 4px; border: 0; background: none; resize: vertical; font-size: 14px; line-height: 1.5; outline: none; }
+    .composer textarea::placeholder, .field::placeholder { color: var(--muted); opacity: .8; }
+    .composer-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 6px 6px 8px; }
+    .kbd { font: 500 10.5px/1 var(--mono); color: var(--muted); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 3px 6px; white-space: nowrap; }
+
+    .btn { border: 1px solid var(--line-strong); border-radius: 10px; padding: 7px 11px; font-size: 12.5px; font-weight: 600; background: var(--surface); transition: background .15s, border-color .15s; }
+    .btn:hover { border-color: var(--ink); }
+    .btn.subtle { border-color: transparent; background: var(--sunk); }
+    .btn.subtle:hover { border-color: var(--line-strong); }
+
+    .chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 24px), transparent); }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; transition: all .15s; }
+    .chip:hover { color: var(--ink); border-color: var(--line-strong); transform: translateY(-1px); }
+
+    .ideas { display: none; flex-direction: column; gap: 7px; max-height: 300px; overflow-y: auto; }
+    .ideas.on { display: flex; }
+    .ideasite { font: 500 11px/1.3 var(--mono); color: var(--muted); }
+    .idea { display: block; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px;
+            font-size: 12.5px; line-height: 1.45; color: var(--muted); transition: border-color .15s, transform .15s; }
+    .idea:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .idea b { display: block; margin-bottom: 3px; font: 400 17px/1.15 var(--serif); color: var(--ink); }
+
+    .primary { width: 100%; border: 0; border-radius: 12px; padding: 12px 14px; background: var(--ink); color: var(--bg); font-size: 14px; font-weight: 650; letter-spacing: -.01em;
+               position: relative; overflow: hidden; transition: transform .15s, box-shadow .2s; }
+    .primary::after { content: ""; position: absolute; inset: 0; background: var(--grad); opacity: 0; transition: opacity .25s; }
+    .primary:hover { transform: translateY(-1px); box-shadow: 0 10px 24px -10px rgba(139, 92, 255, .7); }
+    .primary:hover::after { opacity: .22; }
+    .primary:disabled { opacity: .5; cursor: progress; transform: none; }
+
+    .progress { display: none; height: 3px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+    .progress i { display: block; width: 40%; height: 100%; border-radius: 3px; background: var(--grad); animation: slide 1.3s ease-in-out infinite; }
+    @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+    .working .progress { display: block; }
+    .status { font-size: 12.5px; color: var(--muted); }
+    .status:empty { display: none; }
+    .status.err { color: var(--err); font-weight: 600; }
+    pre { display: none; margin: 0; height: 92px; overflow: hidden; padding: 10px 12px; border-radius: 12px; background: #0e0e12; color: #b9f5cf;
+          font: 10.5px/1.5 var(--mono); white-space: pre-wrap; word-break: break-all; mask-image: linear-gradient(transparent, #000 40%); border: 1px solid var(--line); }
+
+    .seg { display: grid; grid-template-columns: 1fr auto; gap: 4px; padding: 4px; border-radius: 12px; background: var(--sunk); border: 1px solid var(--line); }
+    .seg button { display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 9px; padding: 8px 10px; background: none; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+    .seg button:hover:not(:disabled) { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+    .seg button:disabled { opacity: .45; cursor: not-allowed; }
+
+    .remixbox { display: none; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--accent); border-radius: 14px; background: color-mix(in srgb, var(--accent) 7%, var(--bg)); }
+    .remixbox.on { display: flex; }
+    .remixtitle { font: 400 17px/1.2 var(--serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .remixbox textarea { min-height: 60px; resize: vertical; }
+    .row { display: flex; gap: 8px; }
+    .row .primary { flex: 1; }
+
+    .settings { border-top: 1px solid var(--line); padding-top: 8px; }
+    .settings summary { list-style: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+    .settings summary::-webkit-details-marker { display: none; }
+    .settings summary::before { content: "›"; display: inline-block; font-size: 15px; transition: transform .2s; }
+    .settings[open] summary::before { transform: rotate(90deg); }
+    .setrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; font-size: 12.5px; }
+    .setrow .field { width: auto; min-width: 0; max-width: 60%; padding: 6px 9px; }
+    .switch { appearance: none; flex: none; width: 36px; height: 21px; margin: 0; border-radius: 999px; background: var(--line-strong); position: relative; cursor: pointer; transition: background .2s; }
+    .switch::after { content: ""; position: absolute; top: 2.5px; left: 2.5px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .2s; }
+    .switch:checked { background: var(--accent); }
+    .switch:checked::after { transform: translateX(15px); }
+
+    .toast { position: absolute; right: 0; bottom: calc(100% + 10px); width: max-content; max-width: min(360px, calc(100vw - 40px)); display: flex; align-items: center; gap: 9px;
+             background: var(--ink); color: var(--bg); border-radius: 999px; padding: 9px 15px; font-size: 12.5px; font-weight: 600; box-shadow: var(--shadow);
+             opacity: 0; transform: translateY(6px); transition: opacity .25s ease, transform .25s ease; pointer-events: none; }
+    .toast.on { opacity: 1; transform: none; }
+    .toast.busy::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: #5ef0a0; animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .25; } }
+
+    @media (max-width: 520px), (max-height: 560px) {
+      .card { width: calc(100vw - 40px); max-height: calc(100vh - 40px); border-radius: 16px; }
+      header { padding: 10px 10px 10px 12px; }
+      h1 { font-size: 21px; }
+      .body { padding: 12px; gap: 8px; }
+      .composer textarea { min-height: 60px; }
+      pre { height: 64px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }`;
+
   const panel = (() => {
     let root = null;
     let hostEl = null;
@@ -874,89 +1039,85 @@ Return the complete corrected code in one \`\`\`js block.`;
       hostEl.style.cssText = "position:fixed;right:20px;bottom:20px;z-index:2147483647;";
       root = hostEl.attachShadow({ mode: "open" });
       root.innerHTML = `
-        <style>
-          :host { all: initial; color-scheme: light; }
-          * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-          button, textarea, input, select { color: #111; }
-          .pill { background: #111; color: #fff; border: 0; border-radius: 999px; padding: 10px 16px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
-          .card { width: 360px; background: #fff; color: #111; border-radius: 16px; padding: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.28); display: none; }
-          .open .card { display: block; } .open .pill { display: none; }
-          h1 { font-size: 15px; margin: 0 0 10px; display: flex; justify-content: space-between; }
-          h1 button { background: none; border: 0; font-size: 16px; cursor: pointer; }
-          textarea, input, select { width: 100%; border: 1.5px solid #ddd; border-radius: 10px; padding: 9px; font-size: 13px; }
-          textarea { height: 64px; resize: vertical; }
-          .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
-          .chip { border: 1.5px solid #ddd; background: #fafafa; border-radius: 999px; padding: 4px 9px; font-size: 12px; cursor: pointer; }
-          .row { display: flex; gap: 8px; margin-top: 8px; }
-          .modelrow select { width: auto; min-width: 0; flex: 1; }
-          .go { flex: 1; background: #111; color: #fff; border: 0; border-radius: 10px; padding: 10px; font-weight: 700; cursor: pointer; }
-          .ghost { background: #f2f2f2; border: 0; border-radius: 10px; padding: 8px 10px; font-size: 12px; cursor: pointer; }
-          .ideas { display: none; margin-top: 8px; max-height: 300px; overflow: auto; }
-          .ideas.on { display: block; }
-          .ideasite { font-size: 11px; color: #666; margin-bottom: 6px; }
-          .idea { display: block; width: 100%; text-align: left; border: 1.5px solid #ddd; background: #fafafa; border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; font-size: 12px; line-height: 1.35; color: #333; }
-          .idea:hover, .idea:focus-visible { border-color: #111; background: #fff; }
-          .idea b { display: block; font-size: 12px; color: #111; margin-bottom: 3px; }
-          .remixbox { display: none; margin-top: 10px; padding: 10px; border: 1.5px solid #111; border-radius: 12px; background: #fffbea; }
-          .remixbox.on { display: block; }
-          .remixtitle { font-size: 11px; font-weight: 800; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-          .remixbox textarea { height: 58px; background: #fff; }
-          .status { font-size: 12px; color: #555; margin-top: 10px; min-height: 16px; }
-          .status.err { color: #c62828; }
-          pre { background: #0d0d0d; color: #39ff88; font: 10px/1.35 ui-monospace, monospace; border-radius: 8px; padding: 8px; height: 84px; overflow: hidden; white-space: pre-wrap; word-break: break-all; margin: 8px 0 0; display: none; }
-          .meta { font-size: 11px; color: #888; margin-top: 4px; }
-          .reviewrow { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: #333; cursor: pointer; }
-          .reviewrow input { width: auto; margin: 0; }
-          .wrap { position: relative; display: flex; flex-direction: column; align-items: flex-end; }
-          .toast { position: absolute; right: 0; bottom: calc(100% + 10px); width: max-content; max-width: 340px; background: #111; color: #fff;
-                   border-radius: 999px; padding: 9px 14px; font-size: 12px; font-weight: 700; box-shadow: 0 8px 26px rgba(0,0,0,.3);
-                   opacity: 0; transform: translateY(6px); transition: opacity .25s ease, transform .25s ease; pointer-events: none; }
-          .toast.on { opacity: 1; transform: none; }
-          .toast.busy::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%;
-                   background: #39ff88; animation: pulse 1s ease-in-out infinite; }
-          @keyframes pulse { 50% { opacity: .25; } }
-          @media (prefers-reduced-motion: reduce) { .toast, .toast.busy::before { transition: none; animation: none; } }
-        </style>
-        <div class="wrap">
+        <style>${PANEL_CSS}</style>
+        <div class="wrap" data-theme="auto">
           <div class="toast" role="status" aria-live="polite"></div>
-          <button class="pill">✦ Remodel</button>
-          <div class="card">
-            <h1>✦ Remodel <button class="close" title="Close">×</button></h1>
-            <div class="keybox" style="display:none">
-              <input class="key" type="password" autocomplete="off" placeholder="Paste a new OpenAI API key">
-              <div class="row">
-                <button class="ghost savekey">Save new key</button>
-                <button class="ghost cancelkey">Cancel</button>
+          <button class="pill" aria-label="Open Remodel"><span class="mark">✦</span>Remodel</button>
+          <section class="card" role="dialog" aria-label="Remodel">
+            <header>
+              <span class="mark big">✦</span>
+              <div class="titles">
+                <h1>Remodel</h1>
+                <div class="meta">${page.generic ? page.site : page.type}</div>
               </div>
-            </div>
-            <textarea class="prompt" placeholder="Describe the redesign, or jot a few notes about the site and press Suggest prompts…"></textarea>
-            <div class="chips">${PRESETS.map((p) => `<button class="chip">${p}</button>`).join("")}</div>
-            <button class="ghost suggest" style="width:100%">✨ Suggest prompts for this site</button>
-            <div class="ideas"></div>
-            <div class="row modelrow">
-              <select class="model">${MODELS.map((m) => `<option>${m}</option>`).join("")}</select>
-              <button class="ghost keytoggle">Change API key</button>
-            </div>
-            <label class="reviewrow"><input type="checkbox" class="review" checked> AI visual review after each design</label>
-            <div class="row"><button class="go">Remodel this page</button></div>
-            <div class="row">
-              <button class="ghost toggle">Original ⇄ Remodel (Alt+R)</button>
-              <button class="ghost reset">Reset site</button>
-            </div>
-            <div class="remixbox">
-              <div class="remixtitle"></div>
-              <textarea class="remixprompt" placeholder="Turn this chapter into an interactive timeline…"></textarea>
-              <div class="row">
-                <button class="go remixgo">Remix this chapter</button>
-                <button class="ghost remixcancel">Cancel</button>
+              <button class="icon theme" title="Theme: follow system">◐</button>
+              <button class="icon close" title="Close (Esc)" aria-label="Close">×</button>
+            </header>
+            <div class="body">
+              <div class="keybox" style="display:none">
+                <label class="label" for="rm-key">OpenAI API key</label>
+                <input class="key field" id="rm-key" type="password" autocomplete="off" placeholder="sk-…">
+                <div class="row">
+                  <button class="btn savekey">Save key</button>
+                  <button class="btn subtle cancelkey">Cancel</button>
+                </div>
+                <p class="hint">Stored only in this browser's extension storage.</p>
               </div>
+              <label class="label" for="rm-prompt">Describe the redesign</label>
+              <div class="composer">
+                <textarea class="prompt" id="rm-prompt" placeholder="A calm editorial magazine… or jot notes about the site and press Suggest."></textarea>
+                <div class="composer-bar">
+                  <button class="btn subtle suggest">✨ Suggest prompts</button>
+                  <span class="kbd">Ctrl ⏎</span>
+                </div>
+              </div>
+              <div class="chips">${PRESETS.map((p) => `<button class="chip">${p}</button>`).join("")}</div>
+              <div class="ideas"></div>
+              <button class="go primary">Remodel this page</button>
+              <div class="progress"><i></i></div>
+              <div class="status"></div>
+              <pre class="ticker"></pre>
+              <div class="seg">
+                <button class="toggle">Original ⇄ Remodel <span class="kbd">Alt R</span></button>
+                <button class="reset">Reset site</button>
+              </div>
+              <div class="remixbox">
+                <div class="remixtitle"></div>
+                <textarea class="remixprompt field" placeholder="Turn this chapter into an interactive timeline…"></textarea>
+                <div class="row">
+                  <button class="go remixgo primary">Remix this chapter</button>
+                  <button class="btn subtle remixcancel">Cancel</button>
+                </div>
+              </div>
+              <details class="settings">
+                <summary>Settings</summary>
+                <div class="setrow"><span>Model</span><select class="model field">${MODELS.map((m) => `<option>${m}</option>`).join("")}</select></div>
+                <label class="setrow"><span>AI visual review after each design</span><input type="checkbox" class="review switch" checked></label>
+                <div class="setrow"><span>API key</span><button class="btn subtle keytoggle">Change API key</button></div>
+              </details>
             </div>
-            <div class="status"></div>
-            <pre class="ticker"></pre>
-            <div class="meta">${page.type}</div>
-          </div>
+          </section>
         </div>`;
       document.documentElement.append(hostEl);
+      loadFonts();
+
+      const THEMES = { auto: ["◐", "Theme: follow system"], light: ["☀", "Theme: light"], dark: ["☾", "Theme: dark"] };
+      const applyTheme = (theme) => {
+        const t = THEMES[theme] ? theme : "auto";
+        $(".wrap").dataset.theme = t;
+        $(".theme").textContent = THEMES[t][0];
+        $(".theme").title = THEMES[t][1];
+      };
+      $(".theme").onclick = () => {
+        const order = Object.keys(THEMES);
+        const next = order[(order.indexOf($(".wrap").dataset.theme) + 1) % order.length];
+        applyTheme(next);
+        chrome.storage.local.set({ panelTheme: next });
+      };
+      $(".card").addEventListener("keydown", (e) => {
+        if (e.key === "Escape") collapse();
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && e.target.classList.contains("prompt")) $(".go").click();
+      });
 
       $(".pill").onclick = expand;
       $(".close").onclick = collapse;
@@ -999,7 +1160,8 @@ Return the complete corrected code in one \`\`\`js block.`;
         $(".keytoggle").textContent = "Change API key";
         status("API key updated.");
       };
-      chrome.storage.local.get(["apiKey", "model", "review", SITE_KEY]).then((s) => {
+      chrome.storage.local.get(["apiKey", "model", "review", "panelTheme", SITE_KEY]).then((s) => {
+        applyTheme(s.panelTheme);
         if (!s.apiKey) {
           $(".keytoggle").textContent = "Add API key";
           showKey();
@@ -1034,6 +1196,12 @@ Return the complete corrected code in one \`\`\`js block.`;
       $(".status").textContent = text;
       $(".status").classList.toggle("err", isError);
       if (!busy) $(".ticker").style.display = "none";
+    }
+    function setBusy(on) {
+      mount();
+      $(".card").classList.toggle("working", on);
+      $(".go").disabled = on;
+      $(".suggest").disabled = on;
     }
     function progress(delta, length, started) {
       mount();
@@ -1087,7 +1255,7 @@ Return the complete corrected code in one \`\`\`js block.`;
       box.classList.add("on");
     }
 
-    return { mount, expand, collapse, showKey, openRemix, status, progress, finishProgress, updateToggle, toast, setHidden, showIdeas };
+    return { mount, expand, collapse, showKey, openRemix, status, setBusy, progress, finishProgress, updateToggle, toast, setHidden, showIdeas };
   })();
 
   chrome.runtime.onMessage.addListener((msg) => {

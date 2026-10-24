@@ -7,7 +7,10 @@
     { name: "Ammu", job: "layout", color: "#ff4d8d" },
     { name: "Kuttan", job: "typography", color: "#2f6bff" },
     { name: "Chinnu", job: "colour", color: "#00b86b" },
+    { name: "Meenu", job: "spacing", color: "#ff8a00" },
+    { name: "Appu", job: "copy", color: "#8b5cff" },
   ];
+  const FILLER = new Set(["very", "really", "just", "basically", "actually", "simply", "quite", "also", "currently", "various", "that", "totally", "literally", "extremely", "highly", "truly", "completely", "perhaps", "somewhat", "rather"]);
   const FACES = [
     ["Georgia, 'Times New Roman', serif", "serif"],
     ["'Trebuchet MS', 'Segoe UI', sans-serif", "humanist"],
@@ -22,6 +25,7 @@
   let run = 0;
   const busy = new Set();
 
+  const spread = (i) => i - (AGENTS.length - 1) / 2;
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -33,8 +37,13 @@
 
   const recent = [];
 
-  function target(selector, test = () => true) {
-    const els = [...document.querySelectorAll(selector)].filter((el) => !busy.has(el) && visible(el) && test(el));
+  function onScreen(el) {
+    const r = el.getBoundingClientRect();
+    return r.width > 40 && r.height > 12 && r.top < innerHeight - 60 && r.bottom > 60 && r.left >= 0 && r.right <= innerWidth;
+  }
+
+  function target(selector, test = () => true, fits = visible) {
+    const els = [...document.querySelectorAll(selector)].filter((el) => !busy.has(el) && fits(el) && test(el));
     const fresh = els.filter((el) => !recent.includes(el));
     const t = fresh.length ? pick(fresh) : els.length ? pick(els) : null;
     if (t) {
@@ -97,6 +106,11 @@
     agent.tag.textContent = `${agent.name} · ${text}`;
   }
 
+  function idle(agent, text) {
+    say(agent, text);
+    return moveTo(agent, 80 + Math.random() * (innerWidth - 260), 80 + Math.random() * (innerHeight - 200), 1200);
+  }
+
   function click(agent, x, y) {
     const p = el("div", "pulse", { left: `${x}px`, top: `${y}px`, background: agent.color });
     setTimeout(() => p.remove(), 700);
@@ -110,7 +124,7 @@
     };
     const selector = "h1, h2, h3, h4, .titleline > a, p, li a, a, button";
     const t = target(selector, (n) => fits(n) && parseFloat(getComputedStyle(n).fontSize) >= 18) || target(selector, fits);
-    if (!t) return say(agent, "reading the page"), sleep(1200);
+    if (!t) return idle(agent, "reading the page");
     busy.add(t);
     try {
       const r = textRect(t);
@@ -162,7 +176,7 @@
       const r = n.getBoundingClientRect();
       return r.width > 80 && r.height > 28 && r.width < innerWidth * 0.95 && r.height < innerHeight * 0.45;
     });
-    if (!t) return say(agent, "measuring the grid"), sleep(1200);
+    if (!t) return idle(agent, "measuring the grid");
     busy.add(t);
     const grid = el("div", "grid");
     try {
@@ -220,7 +234,7 @@
   // Colour: eyedrop a real colour from the page, then paint a new palette over the element.
   async function repaint(agent, token) {
     const t = target("h1, h2, h3, a, button, nav, header, p, td, th, img", (n) => n.getBoundingClientRect().width > 60);
-    if (!t) return say(agent, "sampling colours"), sleep(1200);
+    if (!t) return idle(agent, "sampling colours");
     busy.add(t);
     try {
       const r = t.getBoundingClientRect();
@@ -263,7 +277,140 @@
     }
   }
 
-  const WORK = { typography: retype, layout: regrid, colour: repaint };
+  function luminance({ r, g, b }) {
+    const lin = (c) => ((c /= 255) <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  }
+
+  function ruler(agent, x1, y1, x2, y2, text) {
+    const vertical = x1 === x2;
+    const line = el("div", `ruler ${vertical ? "v" : "h"}`, {
+      left: `${Math.min(x1, x2)}px`, top: `${Math.min(y1, y2)}px`,
+      width: vertical ? "0px" : `${Math.abs(x2 - x1)}px`, height: vertical ? `${Math.abs(y2 - y1)}px` : "0px",
+      borderColor: agent.color, color: agent.color,
+    });
+    const tag = document.createElement("b");
+    tag.style.background = agent.color;
+    tag.textContent = text;
+    line.append(tag);
+    requestAnimationFrame(() => line.classList.add("on"));
+    return line;
+  }
+
+  // Spacing and accessibility: redline an element's width and the gap to its neighbour, then check its real contrast.
+  async function measure(agent, token) {
+    const t = target("h1, h2, h3, p, img, button, li, td, .athing", (n) => n.getBoundingClientRect().width > 60);
+    if (!t) return idle(agent, "checking spacing");
+    busy.add(t);
+    const marks = [];
+    try {
+      const r = t.getBoundingClientRect();
+      say(agent, "measuring");
+      await moveTo(agent, r.left, r.top - 8);
+      if (token !== run) return;
+      click(agent, r.left, r.top - 8);
+      const outline = el("div", "spec", { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, borderColor: agent.color });
+      marks.push(outline, ruler(agent, r.left, r.top - 8, r.right, r.top - 8, `${Math.round(r.width)}px`));
+      await moveTo(agent, r.right, r.top - 8, 600);
+      if (token !== run) return;
+
+      let next = t.nextElementSibling;
+      while (next && !next.getBoundingClientRect().height) next = next.nextElementSibling;
+      const nr = next?.getBoundingClientRect();
+      if (nr && nr.top >= r.bottom && nr.top - r.bottom < innerHeight / 3 && nr.top < innerHeight) {
+        const x = Math.min(r.right, nr.right) - 30;
+        say(agent, "checking the rhythm");
+        await moveTo(agent, x, r.bottom, 500);
+        const gap = Math.round(nr.top - r.bottom);
+        marks.push(ruler(agent, x, r.bottom, x, Math.max(nr.top, r.bottom + 1), `${gap}px`));
+        await moveTo(agent, x, nr.top, 500);
+        if (token !== run) return;
+      }
+
+      const fg = rgbParts(getComputedStyle(t).color);
+      if (fg && t.tagName !== "IMG") {
+        const bg = backgroundOf(t);
+        const [a, b] = [luminance(fg), luminance(bg)].sort((p, q) => q - p);
+        const ratio = (a + 0.05) / (b + 0.05);
+        const large = parseFloat(getComputedStyle(t).fontSize) >= 24;
+        const pass = ratio >= (large ? 3 : 4.5);
+        say(agent, "checking contrast");
+        const badge = el("div", `badge ${pass ? "pass" : "fail"}`, { left: `${Math.min(innerWidth - 190, r.right + 10)}px`, top: `${Math.max(8, r.top)}px` });
+        badge.textContent = `Contrast ${ratio.toFixed(1)}:1 · ${pass ? "AA ✓" : "fails AA"}`;
+        marks.push(badge);
+        await moveTo(agent, Math.min(innerWidth - 190, r.right + 10) + 8, Math.max(8, r.top) + 30, 500);
+        say(agent, pass ? "spacing logged ✓" : "flagged low contrast");
+      } else {
+        say(agent, "spacing logged ✓");
+      }
+      await sleep(1100);
+    } finally {
+      marks.forEach((m) => m.classList.add("out"));
+      setTimeout(() => marks.forEach((m) => m.remove()), 500);
+      busy.delete(t);
+    }
+  }
+
+  function wordRects(root) {
+    const out = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const range = document.createRange();
+    for (let node = walker.nextNode(); node && out.length < 160; node = walker.nextNode()) {
+      for (const m of node.textContent.matchAll(/[A-Za-z][A-Za-z'’-]*/g)) {
+        range.setStart(node, m.index);
+        range.setEnd(node, m.index + m[0].length);
+        const rect = range.getBoundingClientRect();
+        if (rect.width && rect.top > 8 && rect.bottom < innerHeight - 8) out.push({ word: m[0], rect });
+      }
+    }
+    return out;
+  }
+
+  // Copy: red-pen filler words in a real paragraph and leave a margin note.
+  async function edit(agent, token) {
+    const t = target("p, li, dd, blockquote, td", (n) => n.innerText.trim().split(/\s+/).length >= 12, onScreen);
+    if (!t) return idle(agent, "proofreading");
+    busy.add(t);
+    const marks = [];
+    try {
+      const words = wordRects(t);
+      if (words.length < 8) return idle(agent, "proofreading");
+      let cut = words.filter((w) => FILLER.has(w.word.toLowerCase())).slice(0, 4);
+      let why = "filler";
+      if (!cut.length) {
+        const at = Math.floor(Math.random() * (words.length - 4));
+        cut = words.slice(at, at + 3);
+        why = "wordy";
+      }
+      say(agent, "proofreading");
+      await moveTo(agent, cut[0].rect.left, cut[0].rect.bottom);
+      for (const w of cut) {
+        if (token !== run) return;
+        await moveTo(agent, w.rect.left, w.rect.top + w.rect.height / 2, 350);
+        say(agent, `cutting “${w.word}”`);
+        const strike = el("div", "strike", { left: `${w.rect.left - 2}px`, top: `${w.rect.top + w.rect.height * 0.52}px`, background: agent.color });
+        const mark = el("div", "hl", { left: `${w.rect.left - 2}px`, top: `${w.rect.top}px`, width: `${w.rect.width + 4}px`, height: `${w.rect.height}px`, background: `${agent.color}22` });
+        marks.push(strike, mark);
+        requestAnimationFrame(() => (strike.style.width = `${w.rect.width + 4}px`));
+        await moveTo(agent, w.rect.right, w.rect.top + w.rect.height / 2, 260);
+      }
+      if (token !== run) return;
+      const r = t.getBoundingClientRect();
+      const right = r.right + 190 < innerWidth;
+      const note = el("div", "note", { left: `${right ? r.right + 12 : Math.max(8, r.left)}px`, top: `${right ? cut[0].rect.top - 6 : Math.max(8, r.top - 40)}px`, borderColor: agent.color });
+      note.innerHTML = `<b style="color:${agent.color}">Appu</b> `;
+      note.append(`${why === "filler" ? "cut filler" : "tighten"} · −${cut.length} word${cut.length > 1 ? "s" : ""}`);
+      marks.push(note);
+      say(agent, "left a note ✓");
+      await sleep(1300);
+    } finally {
+      marks.forEach((m) => m.classList.add("out"));
+      setTimeout(() => marks.forEach((m) => m.remove()), 500);
+      busy.delete(t);
+    }
+  }
+
+  const WORK = { typography: retype, layout: regrid, colour: repaint, spacing: measure, copy: edit };
 
   async function loop(agent, token, delay) {
     await sleep(delay);
@@ -285,7 +432,7 @@
       <style>
         .agent { position: absolute; left: 0; top: 0; z-index: 5; transition: transform 0.9s cubic-bezier(.2,.8,.2,1), opacity .4s; will-change: transform; }
         .agent svg { width: 22px; height: 22px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
-        .tag { position: absolute; left: 16px; top: 18px; white-space: nowrap; font: 600 12px/1 system-ui, sans-serif;
+        .tag { position: absolute; left: 16px; top: 18px; white-space: nowrap; font: 600 12px/1 "Remodel Sans", system-ui, sans-serif;
                color: #fff; padding: 5px 8px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
         .pulse { position: absolute; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; animation: p .6s ease-out forwards; }
         @keyframes p { from { transform: scale(.2); opacity: .7 } to { transform: scale(1.8); opacity: 0 } }
@@ -307,6 +454,26 @@
         .loupe i { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); transition: opacity .4s; }
         .wash { position: absolute; mix-blend-mode: multiply; opacity: .45; clip-path: inset(0 100% 0 0); transition: clip-path .7s linear, opacity .4s; border-radius: 3px; }
         .wash.on { clip-path: inset(0 0 0 0); }
+        .spec { position: absolute; box-sizing: border-box; border: 1px dashed; transition: opacity .4s; }
+        .ruler { position: absolute; transition: opacity .4s, transform .5s cubic-bezier(.2,.8,.2,1); }
+        .ruler.h { border-top: 1.5px solid; transform: scaleX(0); transform-origin: left; }
+        .ruler.v { border-left: 1.5px solid; transform: scaleY(0); transform-origin: top; }
+        .ruler.on { transform: none; }
+        .ruler.h::before, .ruler.h::after { content: ""; position: absolute; top: -5px; height: 9px; border-left: 1.5px solid; }
+        .ruler.h::before { left: 0 } .ruler.h::after { right: 0 }
+        .ruler.v::before, .ruler.v::after { content: ""; position: absolute; left: -5px; width: 9px; border-top: 1.5px solid; }
+        .ruler.v::before { top: 0 } .ruler.v::after { bottom: 0 }
+        .ruler b { position: absolute; font: 700 10.5px/1 ui-monospace, Consolas, monospace; color: #fff; padding: 3px 5px; border-radius: 4px; white-space: nowrap; }
+        .ruler.h b { left: 50%; top: -20px; transform: translateX(-50%); }
+        .ruler.v b { top: 50%; left: 8px; transform: translateY(-50%); }
+        .badge { position: absolute; font: 700 11px/1 "Remodel Sans", system-ui, sans-serif; padding: 7px 10px; border-radius: 8px; color: #fff; white-space: nowrap;
+                 box-shadow: 0 6px 16px rgba(0,0,0,.2); transition: opacity .4s; animation: pop .3s cubic-bezier(.2,.8,.2,1); }
+        .badge.pass { background: #0f8a4f; } .badge.fail { background: #d93025; }
+        @keyframes pop { from { transform: scale(.7); opacity: 0 } }
+        .strike { position: absolute; height: 2px; width: 0; border-radius: 2px; transition: width .25s linear, opacity .4s; }
+        .hl { position: absolute; border-radius: 3px; transition: opacity .4s; }
+        .note { position: absolute; max-width: 180px; font: 500 11.5px/1.35 "Remodel Sans", system-ui, sans-serif; color: #222; background: #fffdf2; border: 1.5px solid;
+                border-radius: 4px 10px 10px 10px; padding: 7px 9px; box-shadow: 0 6px 16px rgba(0,0,0,.15); transition: opacity .4s; animation: pop .3s cubic-bezier(.2,.8,.2,1); }
         .out { opacity: 0 !important; }
       </style>`;
     layer = document.createElement("div");
@@ -316,7 +483,7 @@
       node.className = "agent";
       node.innerHTML = `<svg viewBox="0 0 24 24"><path d="M3 2l17 9-7.5 2L9 21z" fill="${a.color}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
                       <div class="tag" style="background:${a.color}">${a.name} · ${a.job}</div>`;
-      node.style.transform = `translate(${innerWidth / 2 + (i - 1) * 60}px, ${innerHeight + 40}px)`;
+      node.style.transform = `translate(${innerWidth / 2 + spread(i) * 60}px, ${innerHeight + 40}px)`;
       shadow.append(node);
       a.el = node;
       a.tag = node.querySelector(".tag");
@@ -339,11 +506,11 @@
       AGENTS.forEach((a, i) => {
         a.el.style.transitionDuration = `${MOVE}ms`;
         a.tag.textContent = `${a.name} · done ✓`;
-        a.el.style.transform = `translate(${innerWidth / 2 + (i - 1) * 90}px, ${innerHeight / 2}px)`;
+        a.el.style.transform = `translate(${innerWidth / 2 + spread(i) * 120 - 50}px, ${innerHeight / 2}px)`;
       });
       return new Promise((resolve) =>
         setTimeout(() => {
-          AGENTS.forEach((a, i) => (a.el.style.transform = `translate(${innerWidth / 2 + (i - 1) * 400}px, ${-80}px)`));
+          AGENTS.forEach((a, i) => (a.el.style.transform = `translate(${innerWidth / 2 + spread(i) * 300}px, ${-80}px)`));
           setTimeout(() => this.stop(), 900);
           resolve();
         }, 1000)

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Remodel (prototype)",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Rebuild any page from a prompt. The site keeps working.",
   "permissions": ["storage", "scripting"],
   "host_permissions": ["https://api.openai.com/*", "<all_urls>"],
@@ -19,6 +19,6 @@
   ],
   "sandbox": { "pages": ["sandbox.html"] },
   "web_accessible_resources": [
-    { "resources": ["sandbox.html", "sandbox.js"], "matches": ["<all_urls>"] }
+    { "resources": ["sandbox.html", "sandbox.js", "fonts/*.woff2"], "matches": ["<all_urls>"] }
   ]
 }

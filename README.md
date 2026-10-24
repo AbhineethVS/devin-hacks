@@ -9,6 +9,7 @@ Remodel is an AI-native browser extension that turns a page's real content into 
 - Rebuilds any website from a prompt. The public IRCTC homepage, Wikipedia articles, and Hacker News pages have specialised extractors; every other site uses a generic extractor that reads sections, cards, forms, buttons and the site's brand.
 - Writes the prompt for you: **Suggest prompts for this site** studies a screenshot of the page and its content, optionally researches the site on the web, and proposes three art directions. Notes you type first (for example "for kids") shape all three.
 - Designs with real design knowledge: each request pulls matching styles, font pairings, palettes, page patterns and UX rules from the [UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) data set, and the model follows design-judgement rules adapted from Anthropic's [frontend-design](https://github.com/anthropics/skills) skill. Licences are in `third_party/`.
+- Shows its work: while a design is generated, five agent cursors retype headings, regrid blocks, repaint colours, measure spacing and contrast, and copy-edit the original page, all in a non-destructive overlay.
 - Reuses a design across websites: a "Graphic novel" listing made on one shop applies instantly to another listing site, in that site's colours and with its logo.
 - Keeps IRCTC train search functional: station autocomplete, date, class, quota, and submission are bridged to the live booking form.
 - Creates one reusable renderer per page type and applies it instantly on later pages.

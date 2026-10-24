@@ -43,4 +43,15 @@
   - Ammu (layout) shows a 12-column grid, grabs a real block and drags and resizes it to snap to a column span.
   - Chinnu (colour) eyedrops a real colour from the page, mixes a new one and paints it across the element.
   - Every effect is an overlay. The page's own DOM is never changed, and the effects start only after the original-page screenshots are taken. `tools/cursors-test.mjs` checked this on Wikipedia, books.toscrape.com and Hacker News: no page errors and an unchanged DOM.
+- Added two more working agents, for five in total.
+  - Meenu (spacing) redlines a real element's width and the gap to its neighbour, then computes the element's actual text contrast ratio and shows whether it passes WCAG AA.
+  - Appu (copy) red-pens filler words such as "very" and "really" in a visible paragraph, or a wordy run when there are none, and leaves a margin note.
+  - Agents with nothing to work on now wander into view instead of waiting off-screen.
+- Redesigned the panel (extension v0.3.0).
+  - It uses bundled Inter, Instrument Serif and JetBrains Mono fonts, registered from bytes so that page content-security policies cannot block them.
+  - It has light and dark themes that follow the system by default, with a header button to force either (saved as `panelTheme`).
+  - The prompt box gains an inline Suggest button and Ctrl+Enter to submit. Presets scroll horizontally, Original ⇄ Remodel and Reset sit in a segmented control, and model, review and key settings fold away.
+  - A progress bar shows while a model call runs, and the main buttons are disabled meanwhile. Esc closes the panel.
+  - It is responsive: it fits within the viewport down to a 390 px phone width or a 560 px-tall window.
+  - Checked with `tools/panel-test.mjs` (loads the real extension) on books.toscrape.com in light, dark and 390 px layouts, and on dark-mode GitHub: no page errors, and the card fits the viewport in every case.
 - Added a layout audit: on pages at least 1100 px wide, a tall section whose content spans under 62% of the width, all on one side, is reported as high severity so the review pass repairs it. `tools/inspect-render.mjs` now prints the audit. The check flagged a saved books.toscrape.com renderer whose product grid filled only 56% of a 1440 px page.
