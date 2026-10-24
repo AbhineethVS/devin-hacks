@@ -36,7 +36,7 @@ Participate solo or in a team of up to 4. Remove unused rows.
 
 - [ ] The project implementation started from scratch at the event.
 - [ ] I participated solo or with no more than 4 team members in total.
-- [ ] Codex was used during development and its usage is documented.
+- [ ] Devin was used during development and its usage is documented.
 - [ ] The code repository URL, short description, and working demo are provided.
 - [ ] README setup and demo instructions match the submitted code.
 - [ ] Actual checks and known limitations are documented.
@@ -45,4 +45,4 @@ Participate solo or in a team of up to 4. Remove unused rows.
 - [ ] No credentials or private data are included in the repository or demo instructions.
 - [ ] The organizers' announced submission method and timing have been followed.
 
-Event reference: [DevDay Exchange Community: Kochi on Luma](https://luma.com/z10nz8gp). The event wraps up by **10:00 AM IST on 11 October 2026**.
+Event reference: [Devin Hacks on Luma](https://luma.com/z10nz8gp). The event wraps up by **10:00 AM IST on 11 October 2026**.

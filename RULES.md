@@ -2,7 +2,7 @@
 
 ## Event
 
-**DevDay Exchange Community Hackathon: Kochi**
+**Devin Hacks**
 
 **Dates:** 10–11 October 2026
 
@@ -23,7 +23,7 @@ All times below are in **Indian Standard Time (IST, UTC+05:30)**:
 1. **Participate solo or in a team of up to 4.** You may form a team with fellow participants at the venue.
 2. **The theme is open.** Build anything you like.
 3. **Start from scratch at the event.** Libraries, APIs, and public datasets are welcome. Pre-built projects are not allowed. This repository supplies documentation scaffolding only.
-4. **Use Codex as you build, and briefly document your AI usage.** Keep a short, accurate record in [AI_USAGE.md](AI_USAGE.md).
+4. **Use Devin as you build, and briefly document your AI usage.** Keep a short, accurate record in [AI_USAGE.md](AI_USAGE.md).
 5. **Submit your code repository, a short project description, and a working demo.** Use [SUBMISSION.md](SUBMISSION.md) to prepare these items. Follow the organizers' submission instructions at the venue.
 
 ## Entry and conduct
