@@ -10,9 +10,9 @@
   const RENDERER_KEY = `renderer:${page.type}`;
   const SITE_KEY = `site:${page.site}`;
   const MODELS = ["gpt-6-luna", "gpt-5.4-mini", "gpt-6.1-sol", "gpt-6-astra", "gpt-5.5"];
-  const PRESETS = ["Travel magazine", "Neo-brutalist", "Windows 95", "Apple.com product page", "Newspaper front page", "90s Malayalam movie poster"];
+  const PRESETS = ["Cinematic scroll story", "Graphic novel", "Museum exhibition", "Neo-brutalist", "Apple keynote", "90s Malayalam movie poster"];
 
-  const SYSTEM = `You are an award-winning art director and senior front-end engineer. You completely REBUILD web pages: new information architecture, new layout, new components, new typography, new colour. The original design must be unrecognisable, while all the real content stays.
+  const SYSTEM = `You are an award-winning interactive art director and senior front-end engineer. You completely REBUILD web pages: new information architecture, new layout, original components, typography, colour, and motion. The original design must be unrecognisable, while all the real content stays.
 
 You don't write a page. You write a RENDERER: JavaScript that turns content JSON into a page, so the same design works for every page of this type on the site.
 
@@ -27,11 +27,15 @@ RULES
 - Links: ordinary <a href="..."> using URLs from the data; in-page anchors (#id) are fine. The host handles navigation.
 - Search: <form data-search><input name="q" placeholder="..."></form>.
 - Design the WHOLE page top to bottom for desktop widths (1280–1600px), responsive down to tablet.
-- Make it striking: a strong hero, a clear grid, real components (cards, stat tiles, timelines, pull quotes, sticky table of contents, galleries — whatever fits the style), a deliberate type scale, generous spacing.
+- Make it authored, not AI-template-like: establish one strong visual thesis and repeat a small set of motifs deliberately. Avoid generic gradient blobs, excessive rounded cards, random glassmorphism, and a dashboard grid unless the content calls for it.
+- Invent components that fit the subject: chapter openers, timelines, annotated galleries, stat rails, archival labels, pull quotes, maps, dossiers, sticky table of contents, or entirely new forms.
+- For Wikipedia, every rendered article section MUST have data-rm-section="<section.id>" and data-rm-title="<section.title>". Keep every section, even if some are visually condensed.
+- Cinematic motion hooks are available: data-rm-reveal="up|left|right|scale", data-rm-parallax="0.05..0.35", and data-rm-progress. Use them with restraint on meaningful elements. You may also write custom motion in mount(root).
 - Use the data's images generously (object-fit, aspect-ratio). Images can fail to load: the layout must not depend on them.
 - Body copy stays readable: max ~70ch line length.
 - Include one small witty sticker or badge that fits the style and the site.
-- No external scripts, no fetch/XHR, no iframes, no alert(). Keep the code under ~500 lines.`;
+- Make keyboard focus visible. Motion must not be required to understand content.
+- No external scripts, no fetch/XHR, no iframes, no alert(). Keep the code under ~600 lines.`;
 
   // ---------- small helpers ----------
   const onReady = (fn) => (document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", fn, { once: true }) : fn());
@@ -67,12 +71,12 @@ RULES
     return overlayReady;
   }
 
-  async function render(code, data) {
+  async function render(code, data, options = {}) {
     await ensureOverlay();
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error("Render timed out")), 10000);
       pendingRender = { resolve: () => { clearTimeout(timer); resolve(); }, reject: (e) => { clearTimeout(timer); reject(e); } };
-      overlay.contentWindow.postMessage({ type: "render", code, data }, "*");
+      overlay.contentWindow.postMessage({ type: "render", code, data, options }, "*");
     });
   }
 
@@ -94,6 +98,7 @@ RULES
     else if (msg.type === "rendered") pendingRender?.resolve();
     else if (msg.type === "render-error") pendingRender?.reject(new Error(msg.message));
     else if (msg.type === "toggle") setOverlay(!overlayVisible);
+    else if (msg.type === "select-section") panel.openRemix(msg.section);
     else if (msg.type === "navigate") {
       if (msg.newTab) window.open(msg.href, "_blank");
       else location.href = msg.href;
@@ -144,10 +149,29 @@ ${siblingStyle}`;
     return s;
   }
 
+  function remixPrompt(basePrompt, instruction, section, data, previousCode) {
+    return `${userPrompt(basePrompt, data)}
+
+FOCUSED REMIX REQUEST
+The user selected section "${section.title}" (id: ${section.id}) and asked:
+"${instruction}"
+
+Revise the WHOLE renderer so this section receives that transformation while the rest of the design remains coherent. Preserve every data field and all other sections. The selected section must still use data-rm-section="${section.id}".
+
+CURRENT RENDERER:
+\`\`\`js
+${previousCode}
+\`\`\`
+
+Return the complete revised renderer, not a patch.`;
+  }
+
   // ---------- generate ----------
   let busy = false;
+  let currentCode = "";
+  let currentPrompt = "";
 
-  async function generate(stylePrompt) {
+  async function generate(stylePrompt, remix = null) {
     if (busy) return;
     busy = true;
     const started = Date.now();
@@ -161,13 +185,15 @@ ${siblingStyle}`;
       const sibling = Object.entries(all).find(([k]) => k.startsWith(`renderer:${page.site}:`) && k !== RENDERER_KEY)?.[1];
 
       C.start();
-      panel.status(`Designing with ${useModel}…`);
-      const user = userPrompt(stylePrompt, data, sibling?.style);
+      panel.status(remix ? `Remixing “${remix.section.title}” with ${useModel}…` : `Directing with ${useModel}…`);
+      const user = remix
+        ? remixPrompt(currentPrompt || stylePrompt, remix.instruction, remix.section, data, currentCode)
+        : userPrompt(stylePrompt, data, sibling?.style);
       const onDelta = (m) => panel.progress(m.delta, m.length, started);
 
       let code = extractCode(await stream(SYSTEM, user, useModel, onDelta));
       try {
-        await render(code, data);
+        await render(code, data, { focusSection: remix?.section.id || null });
       } catch (err) {
         panel.status("Found a bug in the design. Fixing…");
         const fix = `${user}
@@ -182,28 +208,44 @@ ${err.message}
 
 Return the complete corrected code in one \`\`\`js block.`;
         code = extractCode(await stream(SYSTEM, fix, useModel, onDelta));
-        await render(code, data);
+        await render(code, data, { focusSection: remix?.section.id || null });
       }
 
       await C.flourish();
       setOverlay(true);
+      currentCode = code;
+      currentPrompt = remix ? (currentPrompt || stylePrompt) : stylePrompt;
       await chrome.storage.local.set({
-        [RENDERER_KEY]: { code, prompt: stylePrompt, model: useModel, style: extractStyle(code), created: Date.now() },
-        [SITE_KEY]: { enabled: true, prompt: stylePrompt },
+        [RENDERER_KEY]: { code, prompt: currentPrompt, model: useModel, style: extractStyle(code), created: Date.now() },
+        [SITE_KEY]: { enabled: true, prompt: currentPrompt },
       });
-      panel.status(`Done in ${Math.round((Date.now() - started) / 1000)} s. Every ${page.type} page now renders instantly. Alt+R toggles.`);
+      panel.status(`${remix ? "Remix" : "Design"} done in ${Math.round((Date.now() - started) / 1000)} s. Hover a chapter to remix it. Alt+R toggles.`);
       panel.collapse();
     } catch (err) {
       C.stop();
       removeCover();
-      panel.status(`Error: ${err.message}`, true);
+      if (remix && currentCode) {
+        try {
+          await render(currentCode, X.extract(page.type), { focusSection: remix.section.id });
+          setOverlay(true);
+          panel.status(`Remix failed; restored the previous design. ${err.message}`, true);
+        } catch {
+          panel.status(`Error: ${err.message}`, true);
+        }
+      } else {
+        panel.status(`Error: ${err.message}`, true);
+      }
+      if (/HTTP 401|API key|token_invalidated|expired_secret_key/i.test(err.message)) panel.showKey();
     } finally {
       busy = false;
+      panel.finishProgress();
     }
   }
 
   async function applyCached(rec) {
     try {
+      currentCode = rec.code;
+      currentPrompt = rec.prompt || "";
       await render(rec.code, X.extract(page.type));
       setOverlay(true);
     } catch (err) {
@@ -244,8 +286,13 @@ Return the complete corrected code in one \`\`\`js block.`;
           .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
           .chip { border: 1.5px solid #ddd; background: #fafafa; border-radius: 999px; padding: 4px 9px; font-size: 12px; cursor: pointer; }
           .row { display: flex; gap: 8px; margin-top: 8px; }
+          .modelrow select { width: auto; min-width: 0; flex: 1; }
           .go { flex: 1; background: #111; color: #fff; border: 0; border-radius: 10px; padding: 10px; font-weight: 700; cursor: pointer; }
           .ghost { background: #f2f2f2; border: 0; border-radius: 10px; padding: 8px 10px; font-size: 12px; cursor: pointer; }
+          .remixbox { display: none; margin-top: 10px; padding: 10px; border: 1.5px solid #111; border-radius: 12px; background: #fffbea; }
+          .remixbox.on { display: block; }
+          .remixtitle { font-size: 11px; font-weight: 800; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .remixbox textarea { height: 58px; background: #fff; }
           .status { font-size: 12px; color: #555; margin-top: 10px; min-height: 16px; }
           .status.err { color: #c62828; }
           pre { background: #0d0d0d; color: #39ff88; font: 10px/1.35 ui-monospace, monospace; border-radius: 8px; padding: 8px; height: 84px; overflow: hidden; white-space: pre-wrap; word-break: break-all; margin: 8px 0 0; display: none; }
@@ -256,16 +303,30 @@ Return the complete corrected code in one \`\`\`js block.`;
           <div class="card">
             <h1>✦ Remodel <button class="close" title="Close">×</button></h1>
             <div class="keybox" style="display:none">
-              <input class="key" type="password" placeholder="OpenAI API key (stored locally)">
-              <div class="row"><button class="ghost savekey">Save key</button></div>
+              <input class="key" type="password" autocomplete="off" placeholder="Paste a new OpenAI API key">
+              <div class="row">
+                <button class="ghost savekey">Save new key</button>
+                <button class="ghost cancelkey">Cancel</button>
+              </div>
             </div>
             <textarea class="prompt" placeholder="Describe the redesign…"></textarea>
             <div class="chips">${PRESETS.map((p) => `<button class="chip">${p}</button>`).join("")}</div>
-            <select class="model">${MODELS.map((m) => `<option>${m}</option>`).join("")}</select>
+            <div class="row modelrow">
+              <select class="model">${MODELS.map((m) => `<option>${m}</option>`).join("")}</select>
+              <button class="ghost keytoggle">Change API key</button>
+            </div>
             <div class="row"><button class="go">Remodel this page</button></div>
             <div class="row">
               <button class="ghost toggle">Original ⇄ Remodel (Alt+R)</button>
               <button class="ghost reset">Reset site</button>
+            </div>
+            <div class="remixbox">
+              <div class="remixtitle"></div>
+              <textarea class="remixprompt" placeholder="Turn this chapter into an interactive timeline…"></textarea>
+              <div class="row">
+                <button class="go remixgo">Remix this chapter</button>
+                <button class="ghost remixcancel">Cancel</button>
+              </div>
             </div>
             <div class="status"></div>
             <pre class="ticker"></pre>
@@ -284,14 +345,37 @@ Return the complete corrected code in one \`\`\`js block.`;
       };
       $(".toggle").onclick = () => setOverlay(!overlayVisible);
       $(".reset").onclick = resetSite;
+      $(".keytoggle").onclick = () => {
+        const keybox = $(".keybox");
+        if (keybox.style.display === "none") showKey();
+        else keybox.style.display = "none";
+      };
+      $(".cancelkey").onclick = () => {
+        $(".key").value = "";
+        $(".keybox").style.display = "none";
+      };
+      $(".remixcancel").onclick = () => $(".remixbox").classList.remove("on");
+      $(".remixgo").onclick = () => {
+        const instruction = $(".remixprompt").value.trim();
+        const section = $(".remixbox")._section;
+        if (instruction && section) generate(currentPrompt || $(".prompt").value.trim(), { instruction, section });
+        else status("Describe how this chapter should change.", true);
+      };
       $(".model").onchange = () => chrome.storage.local.set({ model: $(".model").value });
       $(".savekey").onclick = async () => {
-        await chrome.storage.local.set({ apiKey: $(".key").value.trim() });
+        const apiKey = $(".key").value.trim();
+        if (!apiKey) return status("Paste an API key first.", true);
+        await chrome.storage.local.set({ apiKey });
+        $(".key").value = "";
         $(".keybox").style.display = "none";
-        status("Key saved.");
+        $(".keytoggle").textContent = "Change API key";
+        status("API key updated.");
       };
       chrome.storage.local.get(["apiKey", "model", SITE_KEY]).then((s) => {
-        if (!s.apiKey) $(".keybox").style.display = "block";
+        if (!s.apiKey) {
+          $(".keytoggle").textContent = "Add API key";
+          showKey();
+        }
         if (s.model) $(".model").value = s.model;
         if (s[SITE_KEY]?.prompt) $(".prompt").value = s[SITE_KEY].prompt;
       });
@@ -300,6 +384,22 @@ Return the complete corrected code in one \`\`\`js block.`;
 
     function expand() { mount(); root.querySelector(".wrap").classList.add("open"); }
     function collapse() { mount(); root.querySelector(".wrap").classList.remove("open"); }
+    function showKey() {
+      mount();
+      $(".keybox").style.display = "block";
+      expand();
+      setTimeout(() => $(".key").focus(), 0);
+    }
+    function openRemix(section) {
+      mount();
+      const box = $(".remixbox");
+      box._section = section;
+      $(".remixtitle").textContent = `Selected chapter · ${section.title}`;
+      $(".remixprompt").value = "";
+      box.classList.add("on");
+      expand();
+      setTimeout(() => $(".remixprompt").focus(), 0);
+    }
     function status(text, isError = false) {
       mount();
       $(".status").textContent = text;
@@ -313,9 +413,14 @@ Return the complete corrected code in one \`\`\`js block.`;
       $(".ticker").textContent = codeTail;
       $(".status").textContent = `Writing the renderer… ${(length / 1000).toFixed(1)}k chars · ${Math.round((Date.now() - started) / 1000)} s`;
     }
+    function finishProgress() {
+      if (!root) return;
+      $(".ticker").style.display = "none";
+      codeTail = "";
+    }
     function updateToggle() { if (root) $(".toggle").disabled = !overlay; }
 
-    return { mount, expand, collapse, status, progress, updateToggle };
+    return { mount, expand, collapse, showKey, openRemix, status, progress, finishProgress, updateToggle };
   })();
 
   chrome.runtime.onMessage.addListener((msg) => {

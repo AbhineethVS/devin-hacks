@@ -56,6 +56,7 @@
       title: text(document.querySelector("#firstHeading")),
       url: location.href,
       description: text(document.querySelector(".shortdescription")),
+      stats: null,
       heroImage: null,
       lead: [],
       infobox: null,
@@ -136,19 +137,40 @@
         el.querySelectorAll("li.gallerybox, .gallerybox").forEach(pushImage);
       }
     }
-    data.sections = data.sections.filter((s) => s.blocks.length);
+    data.sections = data.sections.filter((s) => s.blocks.length).map((s, index) => {
+      const prose = s.blocks.map((block) => block.html || block.text || block.items?.join(" ") || block.caption || "").join(" ");
+      const plain = prose.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      const years = [...new Set((plain.match(/\b(?:1[0-9]{3}|20[0-9]{2})\b/g) || []))].slice(0, 12);
+      return {
+        ...s,
+        index: index + 1,
+        wordCount: plain ? plain.split(/\s+/).length : 0,
+        imageCount: s.blocks.filter((block) => block.type === "image").length,
+        years,
+      };
+    });
     data.seeAlso = data.seeAlso.slice(0, 12);
     data.images = data.images.slice(0, 30);
+    const articleText = [data.lead.join(" "), ...data.sections.map((s) => s.blocks.map((b) => b.html || b.text || b.items?.join(" ") || "").join(" "))].join(" ");
+    const wordCount = articleText.replace(/<[^>]+>/g, " ").trim().split(/\s+/).filter(Boolean).length;
+    data.stats = {
+      wordCount,
+      readingMinutes: Math.max(1, Math.round(wordCount / 220)),
+      sectionCount: data.sections.length,
+      imageCount: data.images.length,
+    };
     return data;
   }
 
   const WIKI_SCHEMA = `type Data = {
   site: "Wikipedia"; title: string; url: string; description: string;   // description may be ""
+  stats: { wordCount: number; readingMinutes: number; sectionCount: number; imageCount: number };
   heroImage: { src: string; caption: string } | null;
   lead: string[];                       // intro paragraphs, sanitized HTML (may contain <a>, <b>, <i>)
   infobox: { title: string; rows: { label: string; value: string }[] } | null;
   sections: {
-    id: string; title: string;
+    id: string; title: string; index: number; wordCount: number; imageCount: number;
+    years: string[];                    // distinct years found in the section; useful for timelines, may be empty
     blocks: (
       | { type: "p"; html: string }               // sanitized HTML
       | { type: "subheading"; text: string }
