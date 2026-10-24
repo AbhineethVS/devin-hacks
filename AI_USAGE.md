@@ -1,6 +1,6 @@
 # AI usage record
 
-Use Codex during the hackathon and briefly document its actual contribution here. Add a row after each meaningful task or milestone. Keep summaries concise and omit secrets, private data, and full chat transcripts.
+Use Devin during the hackathon and briefly document its actual contribution here. Add a row after each meaningful task or milestone. Keep summaries concise and omit secrets, private data, and full chat transcripts.
 
 ## Event build log
 
@@ -8,7 +8,7 @@ No participant AI usage has been recorded yet. Replace the placeholder row as yo
 
 | Date and time with timezone | Tool / model, if known | Task | Assistance and affected files | Human review / corrections | Validation and result |
 | --- | --- | --- | --- | --- | --- |
-| TODO | Codex | TODO | TODO | Pending | TODO |
+| TODO | Devin | TODO | TODO | Pending | TODO |
 
 ## Template preparation
 

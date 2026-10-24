@@ -4,7 +4,7 @@
 
 - Read [RULES.md](RULES.md) before working. Build project implementation from scratch at the event; do not import a pre-built project.
 - Libraries, APIs, and public datasets are allowed. Document their sources and use.
-- Use Codex during development and briefly record its actual contribution in [AI_USAGE.md](AI_USAGE.md).
+- Use Devin during development and briefly record its actual contribution in [AI_USAGE.md](AI_USAGE.md).
 - Prepare a code repository, short project description, and working demo in [SUBMISSION.md](SUBMISSION.md).
 
 ## Use basic coding patterns
@@ -20,7 +20,7 @@
 
 - Update [CHANGELOG.md](CHANGELOG.md) in the same commit as each meaningful change. Record the date and time with timezone, what changed, why, the affected files or feature, validation performed, and known limitations.
 - Update [README.md](README.md) whenever setup, commands, environment requirements, project behavior, or demo instructions change.
-- Update [AI_USAGE.md](AI_USAGE.md) whenever Codex makes a meaningful contribution. Record the task, assistance, human review status, checks, and any corrections. Brief summaries are enough; full chat transcripts are unnecessary.
+- Update [AI_USAGE.md](AI_USAGE.md) whenever Devin makes a meaningful contribution. Record the task, assistance, human review status, checks, and any corrections. Brief summaries are enough; full chat transcripts are unnecessary.
 - Keep claims accurate. Distinguish implemented and verified behavior from planned or incomplete work. Never invent test results, deployment success, AI usage, or commit timestamps.
 
 ## Make regular, timely commits

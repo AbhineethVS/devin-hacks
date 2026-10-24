@@ -1,4 +1,4 @@
-# DevDay Exchange Community Hackathon: Kochi
+# Devin Hacks
 
 A repository template for participants at the 10–11 October 2026 hackathon. It contains event rules and documentation scaffolding; build your project from scratch at the event.
 
@@ -24,7 +24,7 @@ Keep your approved Luma QR code ready for entry, and bring your laptop and charg
 1. Select **Use this template → Create a new repository** on GitHub. Create your own project repository and clone it.
 2. Read [RULES.md](RULES.md) and [AGENTS.md](AGENTS.md) before building. Begin project implementation at the event.
 3. Fill in the project overview below as you build. Use any suitable language or framework, keeping the implementation simple.
-4. Record meaningful changes in [CHANGELOG.md](CHANGELOG.md) and your Codex usage in [AI_USAGE.md](AI_USAGE.md). Commit after completed milestones; aim for a meaningful checkpoint about every 30 minutes.
+4. Record meaningful changes in [CHANGELOG.md](CHANGELOG.md) and your Devin usage in [AI_USAGE.md](AI_USAGE.md). Commit after completed milestones; aim for a meaningful checkpoint about every 30 minutes.
 5. Complete [SUBMISSION.md](SUBMISSION.md) with your code repository, short project description, and working demo. Follow submission instructions announced by the organizers.
 
 This template has no application code or required technology stack. The documentation and commit cadence are repository workflow guidance; the event participation rules are in [RULES.md](RULES.md).
