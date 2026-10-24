@@ -8,3 +8,34 @@
 - Validated JavaScript syntax, the extension manifest, live Wikipedia extraction, renderer recovery, and the chapter-to-panel remix handoff in headless Chrome.
 - Added a background AI visual review that screenshots the redesign and repairs layout defects, plus scroll-linked motion, counters, and chapter tracking.
 - Verified the review end to end on the Apple Inc. Wikipedia article with gpt-5.4-mini: it found an empty image frame and replaced the renderer.
+- Added the public IRCTC train-search homepage as the first real-world workflow: the redesign receives the original viewport and structured booking/services/tourism data.
+- Bridged redesigned origin, destination, date, class, quota, and submit controls to IRCTC's real PrimeNG/Angular form, handing users back to the original results flow.
+- Verified the complete IRCTC bridge against a synthetic live-page fixture in Chrome, including autocomplete selection and submission; the live site blocks headless automation.
+- Made IRCTC readiness detection tolerate newer placeholder/ARIA attributes and slow Angular loads, with a specific message for security-check pages.
+- Replaced the uncaught error from stale tabs after an extension reload with an explicit refresh instruction.
+- Kept Remodel's content script alive during IRCTC's initial Angular redirect so the panel mounts when `/nget/train-search` appears after document start.
+- Made Remodel work on any website. Unsupported pages fall back to a generic extractor that produces sections of typed blocks (text, lists, images, tables, repeated cards, forms, buttons, links), brand data (name, logo, colours) and an archetype (`article`, `listing`, `form`, `landing`). Wikipedia, Hacker News and IRCTC keep their specialised extractors.
+- Generation stays at one model call: the renderer now opens with a short `THESIS` design comment, and generic pages also send top and mid-page screenshots of the original.
+- Generic renderers are cached by archetype and style rather than by site. The same style on another website of the same archetype is applied instantly, with that site's branding supplied as `--brand-*` CSS variables. Pressing Remodel again generates a fresh design.
+- Bridged generic forms, standalone buttons, card actions and search to the real page, re-rendering after single-page-app updates.
+- The content script runs on all URLs and shows the Remodel pill everywhere. A hidden-until-clicked panel was tried first and dropped because it was impossible to find.
+- Fixed giant badges on a remodelled GitHub profile. The extractor had dropped each image's displayed size, so 64 px achievement badges arrived as ordinary images and were rendered full width, one per row.
+  - Generic images now carry their original `w`, `h` and a `role` (`icon`, `thumb`, `photo`, `hero`). Card images carry `imageRole`.
+  - Runs of small sibling images become one `icons` block, shown as an inline row.
+  - The renderer and reviewer prompts treat blown-up icons as a high-severity defect.
+- Added a sandbox image-scale guard that runs after every render, so the AI's code cannot break it. Icon and thumbnail images are capped at 1.5 times their original displayed size; unhinted images with source files under 200 px are capped at 1.5 times their natural size. Each shrink is reported to the reviewer.
+  - Verified on github.com/AbhineethVS: a freshly generated renderer drew the badges at 64 px, and a deliberately bad full-width renderer (`tools/fixtures/bad-renderer.js`) was held to 96 px by the guard. Added `tools/inspect-render.mjs`, which re-applies a saved renderer without API calls and reports each image's rendered and natural size.
+- Fixed the panel on dark-mode sites such as GitHub. It inherited the page's dark colour scheme, which made its chips and buttons invisible.
+- The toolbar button and the Alt+Shift+M shortcut inject the scripts into tabs opened before an extension reload, guarded against double loading.
+- Verified end to end with gpt-5.4-mini: books.toscrape.com generated in about 40 s, then BBC News and GitHub Trending reused the design in under a second. A python.org redesign sent a search through to python.org's real results page. Added `tools/probe-generic.mjs` (extraction only, no API calls) and `tools/run-generic.mjs`.
+- Added a prompt writer ("Suggest prompts for this site").
+  - It sends a screenshot of the original page, a content sample, the URL and any notes typed in the prompt box to the model.
+  - It requests OpenAI's hosted `web_search` tool and retries without it if the model rejects the tool.
+  - It returns three art directions (Elevated, Bold, Task-first) as clickable cards that fill in the prompt box.
+  - Verified on books.toscrape.com with gpt-5.4-mini and the note "for kids who love reading": three tailored directions in about 10 s. Whether the model actually ran a web search was not inspected. Added `tools/suggest-test.mjs`.
+- Gave the generator and the prompt writer design knowledge from two open-source skills (licences in `third_party/`).
+  - UI UX Pro Max (MIT): its style, font-pairing, product-palette, page-pattern and UX-guideline tables are converted by `tools/build-design-kb.mjs` into `extension/design-kb.js`, about 300 KB, loaded only in the service worker. For each request the worker matches the style prompt and the site's title and archetype against the tables by keyword and returns a short **DESIGN REFERENCE**: up to 2 styles, 3 font pairings, 1 product palette, 1 page pattern and 14 UX rules. Retrieval is keyword-based, not semantic.
+  - Anthropic's frontend-design skill (Apache-2.0) is condensed into a **DESIGN JUDGEMENT** section of the renderer system prompt. It covers grounding in the subject, typography, structure that carries information, a list of AI-default tells to avoid and restraint in motion. The `THESIS` comment now ends with an `AVOIDED:` line naming the default it rejected.
+- Banned meta copy. Renderers had been writing text about the redesign itself ("a graphic-novel frame for listings", "Panel one"); the prompt now forbids it and the reviewer treats it as high severity.
+- Capped images are now centred in the frame the renderer drew for them. A cap only applies when an image is more than 15% over its limit.
+- Added a layout audit: on pages at least 1100 px wide, a tall section whose content spans under 62% of the width, all on one side, is reported as high severity so the review pass repairs it. `tools/inspect-render.mjs` now prints the audit. The check flagged a saved books.toscrape.com renderer whose product grid filled only 56% of a 1440 px page.

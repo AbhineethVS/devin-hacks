@@ -62,6 +62,14 @@ function validate(data) {
     const missing = data.sections.filter((section) => !rendered.has(section.id));
     if (missing.length) throw new Error(`Renderer omitted ${missing.length} article section(s): ${missing.slice(0, 4).map((s) => s.title).join(", ")}`);
   }
+  if (data.site === "IRCTC") {
+    const form = root.querySelector('[data-bound-form="train-search"]');
+    if (!form) throw new Error('IRCTC renderer must include <form data-bound-form="train-search">.');
+    const rendered = new Set([...form.querySelectorAll("[data-bind]")].map((el) => el.dataset.bind));
+    const required = [data.booking?.from, data.booking?.to, data.booking?.date, data.booking?.submit].filter(Boolean);
+    const missing = required.filter((control) => !rendered.has(control.id));
+    if (missing.length) throw new Error(`IRCTC booking form omitted: ${missing.map((control) => control.label).join(", ")}.`);
+  }
   if (document.documentElement.scrollWidth > document.documentElement.clientWidth + 24) {
     throw new Error("Renderer causes horizontal page overflow.");
   }
@@ -133,6 +141,46 @@ async function audit() {
       add("medium", `Section "${title}"`, "The section is not visible by default.", "If this is a tab or collapsible, make it obvious how to open it; otherwise show it.");
     }
   });
+
+  if (lastData?.generic && lastData.sections?.length) {
+    const rendered = new Set([...root.querySelectorAll("[data-rm-section]")].map((el) => el.dataset.rmSection));
+    const missing = lastData.sections.filter((s) => !rendered.has(s.id));
+    if (missing.length) {
+      add(missing.length > lastData.sections.length / 2 ? "high" : "medium", `${missing.length} section(s)`,
+        `Sections are missing or lack data-rm-section: ${missing.slice(0, 4).map((s) => s.title || s.id).join(", ")}.`,
+        "Render every section with id, data-rm-section and data-rm-title.");
+    }
+  }
+
+  // Tall stretches where all content sits to one side of a wide page, leaving a large empty band.
+  if (innerWidth >= 1100) {
+    const content = [...root.querySelectorAll("img, p, h1, h2, h3, h4, li, a, button, td, figure")]
+      .map((el) => el.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0);
+    const tall = [...root.querySelectorAll("[data-rm-section], section, article, main")]
+      .map((el) => ({ el, r: el.getBoundingClientRect() }))
+      .filter(({ r }) => r.height > 500);
+    for (const { el, r: band } of tall) {
+      const inBand = content.filter((r) => Math.min(r.bottom, band.bottom) - Math.max(r.top, band.top) > r.height * 0.5);
+      if (inBand.length < 4) continue;
+      const left = Math.min(...inBand.map((r) => r.left));
+      const right = Math.max(...inBand.map((r) => r.right));
+      const used = (right - left) / innerWidth;
+      if (used < 0.62 && Math.abs(left - (innerWidth - right)) > innerWidth * 0.25) {
+        add("high", `Section "${el.dataset.rmTitle || el.id || el.tagName.toLowerCase()}"`,
+          `Its content only spans ${Math.round(used * 100)}% of the ${innerWidth}px-wide page (x ${Math.round(left)}–${Math.round(right)}px), leaving a large empty band beside it.`,
+          "Check grid-template-columns and grid-column placement so content fills the layout, or centre a deliberate reading column.");
+        break;
+      }
+    }
+  }
+
+  root.querySelectorAll("img").forEach(capImage);
+  if (shrunkImages) {
+    add(shrunkImages >= 3 ? "high" : "medium", `${shrunkImages} small image(s)`,
+      "Icons, badges, logos or avatars were drawn far larger than their real size; the runtime shrank them, which can leave empty frames or odd gaps.",
+      "Render icon/thumb images near their w (at most 1.5×), show icons blocks as an inline wrapped row, and give icon-role card images a small avatar slot instead of a cover.");
+  }
 
   const broken = [...root.querySelectorAll("img[src]")].filter((img) => img.complete && img.naturalWidth === 0);
   if (broken.length) add("medium", `${broken.length} image(s)`, "Images failed to load and may leave empty frames.", "Collapse image frames or show a designed fallback when an image is missing.");
@@ -382,6 +430,50 @@ function endReview() {
   return true;
 }
 
+// ---------- image scale guard: small images are never blown up, whatever the renderer does ----------
+let imageLimits = new Map();
+let shrunkImages = 0;
+
+function collectImageLimits(data) {
+  const limits = new Map();
+  const visit = (value) => {
+    if (!value || typeof value !== "object") return;
+    if (Array.isArray(value)) return value.forEach(visit);
+    if (typeof value.src === "string" && (value.role === "icon" || value.role === "thumb") && value.w) limits.set(value.src, value.w * 1.5);
+    if (value.type === "icons") value.items.forEach((item) => item.src && limits.set(item.src, (value.size || 64) * 1.5));
+    if (typeof value.image === "string" && value.imageRole === "icon") limits.set(value.image, 96);
+    Object.values(value).forEach(visit);
+  };
+  visit(data);
+  return limits;
+}
+
+function capImage(img) {
+  if (img.dataset.rmCapped) return;
+  const rect = img.getBoundingClientRect();
+  if (!rect.width) return;
+  const hinted = imageLimits.get(img.currentSrc) ?? imageLimits.get(img.getAttribute("src"));
+  // Without a hint, only small source files are capped, so large photos keep the renderer's sizing.
+  const limit = Math.max(32, hinted ?? (img.naturalWidth && img.naturalWidth < 200 ? img.naturalWidth * 1.5 : Infinity));
+  if (rect.width <= limit * 1.15) return;
+  img.dataset.rmCapped = "1";
+  img.style.setProperty("width", `${Math.round(limit)}px`, "important");
+  img.style.setProperty("max-width", `${Math.round(limit)}px`, "important");
+  img.style.setProperty("height", "auto", "important");
+  img.style.setProperty("object-fit", "contain", "important");
+  // Centre the shrunk image in whatever frame the renderer drew for it.
+  if (getComputedStyle(img).display !== "inline") {
+    img.style.setProperty("margin-left", "auto", "important");
+    img.style.setProperty("margin-right", "auto", "important");
+    if (getComputedStyle(img.parentElement).display === "flex") img.style.setProperty("align-self", "center", "important");
+  }
+  shrunkImages++;
+}
+
+root.addEventListener("load", (event) => {
+  if (event.target.tagName === "IMG") capImage(event.target);
+}, true);
+
 // ---------- messages from the host ----------
 function renderPage(msg) {
   try {
@@ -397,6 +489,12 @@ function renderPage(msg) {
     );
     const mod = factory(esc);
     if (!mod.render) throw new Error("The code does not define render(data).");
+    const colors = msg.data?.brand?.colors || {};
+    for (const name of ["primary", "accent", "bg", "text"]) {
+      const value = colors[name];
+      if (typeof value === "string" && CSS.supports("color", value)) document.documentElement.style.setProperty(`--brand-${name}`, value);
+      else document.documentElement.style.removeProperty(`--brand-${name}`);
+    }
     const html = mod.render(msg.data);
     const options = { ...msg.options };
     if (options.keepScroll) options.keepScroll = scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight);
@@ -412,6 +510,9 @@ function renderPage(msg) {
       mountWarning = `Optional mount() failed: ${String(err)}`;
     }
     mountRuntime(msg.data, options);
+    imageLimits = collectImageLimits(msg.data);
+    shrunkImages = 0;
+    root.querySelectorAll("img").forEach(capImage);
     send({ type: "rendered", warning: mountWarning });
   } catch (err) {
     send({ type: "render-error", message: String((err && err.stack) || err).slice(0, 1500) });
@@ -429,6 +530,24 @@ window.addEventListener("message", async (event) => {
   const msg = event.data;
   if (event.source !== parent || !msg) return;
   if (msg.type === "render") return renderPage(msg);
+  if (msg.type === "bound-status") {
+    let targets = [...root.querySelectorAll("[data-rm-form-status]")];
+    if (!targets.length) {
+      const form = root.querySelector("[data-bound-form]");
+      if (form) {
+        const status = document.createElement("p");
+        status.dataset.rmFormStatus = "";
+        status.setAttribute("role", "status");
+        form.append(status);
+        targets = [status];
+      }
+    }
+    targets.forEach((el) => {
+      el.textContent = msg.text || "";
+      el.toggleAttribute("data-error", Boolean(msg.isError));
+    });
+    return;
+  }
   const call = CALLS[msg.type];
   if (!call || !msg.id) return;
   try {
@@ -439,7 +558,28 @@ window.addEventListener("message", async (event) => {
 });
 
 // Bridge: links and search go back to the real page.
+const sendBoundInput = (event) => {
+  const control = event.target.closest?.("[data-bind]");
+  if (!control || !control.closest("[data-bound-form]")) return;
+  send({
+    type: "bound-input",
+    id: control.dataset.bind,
+    event: event.type,
+    key: event.inputType || "",
+    value: control.value,
+    checked: control.checked,
+  });
+};
+document.addEventListener("input", sendBoundInput);
+document.addEventListener("change", sendBoundInput);
+
 document.addEventListener("click", (event) => {
+  const control = event.target.closest?.("[data-bind]");
+  if (control && !control.closest("[data-bound-form]") && !control.matches("input, select, textarea")) {
+    event.preventDefault();
+    send({ type: "bound-click", id: control.dataset.bind });
+    return;
+  }
   const a = event.target.closest("a[href]");
   if (!a) return;
   const raw = a.getAttribute("href");
@@ -454,11 +594,24 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("submit", (event) => {
-  event.preventDefault();
   const form = event.target;
   if (form.matches("[data-search]")) {
+    event.preventDefault();
     const q = new FormData(form).get("q");
     if (q) send({ type: "search", q: String(q) });
+  } else if (form.matches("[data-bound-form]")) {
+    event.preventDefault();
+    const controls = [...form.querySelectorAll("[data-bind]")];
+    const fields = controls.filter((el) => !el.matches('[type="submit"],button')).map((el) => ({
+      id: el.dataset.bind,
+      value: el.value,
+      checked: el.checked,
+    }));
+    const stationIds = controls.filter((el) => /^(from|to)$/i.test(el.name)).map((el) => el.dataset.bind);
+    const submit = event.submitter?.dataset.bind
+      ? event.submitter
+      : form.querySelector('button[type="submit"][data-bind],input[type="submit"][data-bind]');
+    send({ type: "bound-submit", form: form.dataset.boundForm, fields, stationIds, submitId: submit?.dataset.bind || "" });
   }
 });
 

@@ -1,13 +1,15 @@
 // Orchestrates a redesign: panel → extract → generate a renderer → render in the sandbox → bridge → cache.
 
 (() => {
-  if (window.top !== window) return;
+  if (window.top !== window || window.__remodelLoaded) return;
+  window.__remodelLoaded = true;
   const X = window.RemodelExtract;
   const C = window.RemodelCursors;
-  const page = X.detect();
-  if (!page) return;
+  let booted = false;
 
-  const RENDERER_KEY = `renderer:${page.type}`;
+  function boot(page) {
+  // Generic renderers are keyed by archetype and style, not by site, so they are reused across websites.
+  let rendererKey = page.generic ? "" : `renderer:${page.type}`;
   const SITE_KEY = `site:${page.site}`;
   const MODELS = ["gpt-6-luna", "gpt-5.4-mini", "gpt-6.1-sol", "gpt-6-astra", "gpt-5.5"];
   const PRESETS = ["Cinematic scroll story", "Graphic novel", "Museum exhibition", "Neo-brutalist", "Apple keynote", "90s Malayalam movie poster"];
@@ -17,6 +19,7 @@
 You don't write a page. You write a RENDERER: JavaScript that turns content JSON into a page, so the same design works for every page of this type on the site.
 
 OUTPUT FORMAT: exactly one \`\`\`js code block and nothing else. It must define:
+  /* THESIS: ... */             // FIRST, at most 8 short lines: concept, palette roles, type pairing, recurring motifs, section order, motion idea. The code must follow it.
   const STYLE = \`...\`;          // all CSS. May start with @import of Google Fonts (fonts.googleapis.com). Scope every selector under #rm.
   function render(data) {...}   // returns ONE HTML string for the entire page. Pure function, no DOM access.
   function mount(root) {...}    // optional: small enhancements (scroll-spy, reveal-on-scroll, tabs, collapsibles). No network.
@@ -30,6 +33,7 @@ RULES
 - Make it authored, not AI-template-like: establish one strong visual thesis and repeat a small set of motifs deliberately. Avoid generic gradient blobs, excessive rounded cards, random glassmorphism, and a dashboard grid unless the content calls for it.
 - Invent components that fit the subject: chapter openers, timelines, annotated galleries, stat rails, archival labels, pull quotes, maps, dossiers, sticky table of contents, or entirely new forms.
 - For Wikipedia, every rendered article section MUST have id="<section.id>", data-rm-section="<section.id>" and data-rm-title="<section.title>". Keep every section, even if some are visually condensed.
+- GENERIC PAGES (data.generic is true) can come from ANY website and were extracted automatically, so content is uneven. The renderer is cached and REUSED on other websites with the same archetype, so never hard-code names, text, colours or URLs from the sample. Take identity from data.brand: show brand.name, and brand.logo when present. Use var(--brand-primary, <fallback>) and var(--brand-accent, <fallback>) for identity accents; the host sets them from the real site and they may be unset. The style request decides everything else. Skip empty blocks gracefully and render untitled sections (title ""). Many cards have image: null or text: []; when an image is null, render NO image frame or placeholder box for it and let the card become a compact text card, so a list without images never shows empty frames. data.stats, data.archetype and section wordCount are layout hints, not content: don't display them. Never print invented labels such as "Untitled"; an untitled section simply has no heading. Never show raw URLs as visible text; use them only in href. NO META COPY: never write text about the redesign, the renderer, the style or the layout (e.g. "a graphic-novel frame for listings", "reusable renderer", "ink-ready"), never add empty placeholder panels like "Panel one", and never add filler tag chips. Every visible word comes from the data, except functional UI labels (Search, Menu, Next) and the one sticker. If a slot has no data, drop the slot. RESPECT IMAGE SCALE: image blocks carry their original w, h and role. Only "hero" and "photo" images may be shown large; "icon" and "thumb" images stay close to w (at most 1.5×). An icons block is a wrapped inline row of small images (badges, logos, avatars) at about its size. Cards whose imageRole is "icon" show the image as a small avatar or logo, never as a cover. The host runtime forcibly shrinks small images that are blown up, which leaves awkward gaps, so size them correctly from the start. Every section gets id, data-rm-section and data-rm-title. Follow the CONTROLS CONTRACT in the schema exactly so forms, buttons and search keep working.
 - MOTION TOOLKIT. The host runtime implements these attributes smoothly and switches them off for reduced-motion users. Prefer them over hand-written scroll code:
   data-rm-reveal="up|down|left|right|scale|mask|blur"  entrance when the element scrolls into view
   data-rm-stagger="up|..."  on a container: its children enter one after another (lists, timelines, galleries)
@@ -44,7 +48,20 @@ RULES
 - Body copy stays readable: max ~70ch line length.
 - Include one small witty sticker or badge that fits the style and the site.
 - Make keyboard focus visible. Motion must not be required to understand content.
-- No external scripts, no fetch/XHR, no iframes, no alert(). Keep the code under ~600 lines.`;
+- No external scripts, no fetch/XHR, no iframes, no alert(). Keep the code under ~600 lines.
+
+DESIGN JUDGEMENT (adapted from Anthropic's frontend-design skill, Apache-2.0)
+- Ground the design in the subject: its industry, materials, vernacular and audience are where distinctive choices come from. Open the hero with the most characteristic thing in that world. A big number with a small label and a gradient accent is the default treatment; use it only if it is truly best.
+- Typography carries the personality: one or two families, clearly distinct if two, chosen for this brief rather than your usual defaults, on a deliberate type scale. Body lines under ~75ch; serif body gets a little more line-height.
+- Structure is information: borders, numbering, eyebrows, dividers and labels must encode something real. Use 01/02/03 markers only for true sequences.
+- Avoid the commonest tells of generated pages unless the style request asks for them: accenting a single headline word in another colour or italic; tracked-out ALL-CAPS eyebrow labels above every heading; meta strings joined with middle dots; a spaced em dash in labels; '→' appended to every link; a monospace face for small labels; content chopped into identical rounded cards with one radius and the same soft grey shadow; decorative gradient washes; a cream (#F4F1EA) plus terracotta (#D97757) palette; a near-black with one acid-green accent; broadsheet hairline rules everywhere.
+- Spend boldness in one place: one memorable element, everything around it quiet and disciplined. Before finishing, remove one accessory.
+- Motion: one orchestrated moment (a page-load sequence or one signature reveal) beats fade-and-slide on every section and hover effects on every card. Motion that answers a user's action is welcome.
+- Copy you add (labels, buttons, empty states) is plain, specific, active and in sentence case. The sticker is the one place for wit.
+- In the THESIS, add a line "AVOIDED: ..." naming the generic default you deliberately rejected for this brief.
+- Watch CSS specificity: type and element selectors cancelling each other out is a common source of broken spacing.
+
+When a DESIGN REFERENCE section is provided, it comes from a curated design library (UI UX Pro Max). Use whatever fits as concrete grounding for palette, fonts, page pattern and UX rules. The style request always wins, and the library never overrides content or contracts.`;
 
   // ---------- small helpers ----------
   const onReady = (fn) => (document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", fn, { once: true }) : fn());
@@ -53,6 +70,22 @@ RULES
     return (m ? m[1] : text).trim();
   };
   const extractStyle = (code) => (code.match(/const\s+STYLE\s*=\s*`([\s\S]*?)`\s*;/) || [])[1]?.slice(0, 5000) || "";
+  const extractThesis = (code) => (code.match(/\/\*\s*THESIS:?([\s\S]*?)\*\//) || [])[1]?.trim().slice(0, 1500) || "";
+  const promptHash = (s) => {
+    let h = 5381;
+    for (const c of s.trim().toLowerCase()) h = ((h << 5) + h + c.charCodeAt(0)) | 0;
+    return (h >>> 0).toString(36);
+  };
+  const genericKey = (archetype, prompt) => `renderer:generic:${archetype}:${promptHash(prompt)}`;
+  const rendererRecord = (code, prompt, model, extra = {}) => ({
+    code, prompt, model, style: extractStyle(code), thesis: extractThesis(code),
+    host: location.hostname, archetype: currentData?.archetype || null, created: Date.now(), ...extra,
+  });
+  const pageLoaded = () => new Promise((resolve) => {
+    if (document.readyState === "complete") return setTimeout(resolve, 300);
+    addEventListener("load", () => setTimeout(resolve, 300), { once: true });
+    setTimeout(resolve, 5000);
+  });
 
   // ---------- cover (prevents a flash of the original page on auto-apply) ----------
   let cover = null;
@@ -69,6 +102,7 @@ RULES
   let overlayReady = null;
   let pendingRender = null;
   let overlayVisible = false;
+  let currentData = null;
 
   function ensureOverlay() {
     if (overlay) return overlayReady;
@@ -81,6 +115,7 @@ RULES
   }
 
   async function render(code, data, options = {}) {
+    currentData = data;
     await ensureOverlay();
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error("Render timed out")), 10000);
@@ -117,6 +152,207 @@ RULES
     panel.updateToggle();
   }
 
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  async function extractPageData() {
+    if (page.site === "irctc") {
+      const ready = () => document.querySelector(
+        'input[placeholder^="From" i], p-autocomplete#origin input, input[aria-label^="From" i], input[formcontrolname*="origin" i], input[name*="origin" i]'
+      );
+      for (let i = 0; i < 450 && !ready(); i++) {
+        if (i === 20) panel.status("Waiting for IRCTC’s booking form to load…");
+        await wait(100);
+      }
+      if (!ready()) {
+        const blocked = /powered and protected|access denied|captcha/i.test(document.body?.innerText || "");
+        throw new Error(blocked
+          ? "IRCTC showed a security check instead of the booking form. Complete it, then try again."
+          : "Could not detect IRCTC’s booking form. Reload the page and try once more.");
+      }
+    }
+    return X.extract(page.type);
+  }
+  const boundElement = (id) => {
+    if (typeof id !== "string" || !/^rm-\d+$/.test(id)) return null;
+    return document.querySelector(`[data-rm-id="${CSS.escape(id)}"]`);
+  };
+  function nativeSet(el, property, value) {
+    let proto = el;
+    let setter = null;
+    while ((proto = Object.getPrototypeOf(proto)) && !setter) {
+      setter = Object.getOwnPropertyDescriptor(proto, property)?.set;
+    }
+    if (setter) setter.call(el, value);
+    else el[property] = value;
+  }
+  function notifyControl(el, kind = "input") {
+    el.dispatchEvent(new Event(kind, { bubbles: true }));
+  }
+  const normalize = (value) => String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+  const postBoundStatus = (text, isError = false) => overlay?.contentWindow?.postMessage({ type: "bound-status", text, isError }, "*");
+  const visibleChoice = (item) => {
+    const style = getComputedStyle(item);
+    const rect = item.getBoundingClientRect();
+    return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0 && normalize(item.textContent);
+  };
+
+  async function selectDropdown(el, value) {
+    const wanted = normalize(value);
+    const opener = el.querySelector(".ui-dropdown, .p-dropdown, [role=button], .ui-dropdown-trigger, .p-dropdown-trigger") || el;
+    opener.click();
+    let choices = [];
+    for (let i = 0; i < 12 && !choices.length; i++) {
+      await wait(100);
+      choices = [...document.querySelectorAll('[role="option"], .ui-dropdown-item, .p-dropdown-item')].filter(visibleChoice);
+    }
+    const choice = choices.find((item) => normalize(item.textContent) === wanted)
+      || choices.find((item) => normalize(item.textContent).includes(wanted));
+    if (!choice) throw new Error(`Could not select “${value}” on the original page.`);
+    choice.click();
+    await wait(80);
+  }
+
+  async function selectStation(el) {
+    if (!el || !/From|To/i.test(`${el.placeholder || ""} ${el.getAttribute("aria-label") || ""}`)) return;
+    el.focus();
+    notifyControl(el, "input");
+    const value = normalize(el.value).split(" - ")[0];
+    let choices = [];
+    for (let i = 0; i < 20 && !choices.length; i++) {
+      await wait(100);
+      choices = [...document.querySelectorAll('ul[role="listbox"] li, [role="option"], p-autocompleteitem li')].filter(visibleChoice);
+    }
+    const choice = choices.find((item) => normalize(item.textContent).startsWith(value))
+      || choices.find((item) => normalize(item.textContent).includes(value))
+      || choices[0];
+    if (!choice) throw new Error(`Choose a valid station for ${(el.placeholder || el.getAttribute("aria-label") || "station").replace("*", "")}.`);
+    choice.click();
+    await wait(120);
+  }
+
+  async function updateBoundControl(msg) {
+    const el = boundElement(msg.id);
+    if (!el) return;
+    try {
+      if (el.matches("p-dropdown, .ui-dropdown, .p-dropdown")) {
+        if (msg.event === "change") await selectDropdown(el, msg.value);
+        return;
+      }
+      if (el.tagName === "SELECT") {
+        const wanted = normalize(msg.value);
+        const option = [...el.options].find((o) => o.value === msg.value) || [...el.options].find((o) => normalize(o.text) === wanted);
+        if (option) {
+          nativeSet(el, "value", option.value);
+          notifyControl(el, "input");
+          notifyControl(el, "change");
+        }
+        return;
+      }
+      if (el.matches('input[type="checkbox"], input[type="radio"]')) {
+        nativeSet(el, "checked", Boolean(msg.checked));
+        notifyControl(el, "input");
+        notifyControl(el, "change");
+        return;
+      }
+      if ("value" in el) {
+        nativeSet(el, "value", String(msg.value ?? ""));
+        if (page.site === "irctc" && /From|To/i.test(`${el.placeholder || ""} ${el.getAttribute("aria-label") || ""}`)) {
+          el.focus();
+          el.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: msg.key || "Unidentified" }));
+        }
+        notifyControl(el, "input");
+        if (msg.event === "change") notifyControl(el, "change");
+      }
+    } catch (err) {
+      postBoundStatus(err.message, true);
+    }
+  }
+
+  // Single-page apps update in place after a click or submit: wait for the DOM to settle, then
+  // re-extract and re-render with the same renderer. Full navigations simply unload this script.
+  let refreshRun = 0;
+  async function refreshAfterAction() {
+    if (!page.generic || !currentCode) return;
+    const run = ++refreshRun;
+    await new Promise((resolve) => {
+      let quiet = setTimeout(done, 900);
+      const cap = setTimeout(done, 6000);
+      const observer = new MutationObserver(() => {
+        clearTimeout(quiet);
+        quiet = setTimeout(done, 700);
+      });
+      observer.observe(document.body, { subtree: true, childList: true, characterData: true });
+      function done() {
+        observer.disconnect();
+        clearTimeout(quiet);
+        clearTimeout(cap);
+        resolve();
+      }
+    });
+    if (run !== refreshRun || !overlayVisible) return;
+    try {
+      await render(currentCode, await extractPageData(), { keepScroll: true });
+    } catch (err) {
+      panel.status(`Could not refresh the redesign: ${err.message.split("\n")[0]}`, true);
+    }
+  }
+
+  function clickBound(msg) {
+    const el = boundElement(msg.id);
+    if (!el) return;
+    el.click();
+    refreshAfterAction();
+  }
+
+  function runSearch(q) {
+    if (page.site === "wikipedia") return (location.href = `${location.origin}/w/index.php?search=${encodeURIComponent(q)}`);
+    if (page.site === "hn") return (location.href = `https://hn.algolia.com/?q=${encodeURIComponent(q)}`);
+    const input = boundElement(currentData?.search?.inputId);
+    if (!input) return (location.href = `https://www.google.com/search?q=${encodeURIComponent(`site:${location.hostname} ${q}`)}`);
+    nativeSet(input, "value", q);
+    notifyControl(input, "input");
+    notifyControl(input, "change");
+    if (input.form?.requestSubmit) input.form.requestSubmit();
+    else input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter", code: "Enter", keyCode: 13 }));
+    refreshAfterAction();
+  }
+
+  async function submitBoundForm(msg) {
+    if (page.generic) {
+      try {
+        for (const field of msg.fields || []) await updateBoundControl({ ...field, event: "change" });
+        const submit = boundElement(msg.submitId);
+        const form = boundElement(msg.form);
+        if (submit) submit.click();
+        else if (form?.requestSubmit) form.requestSubmit();
+        else throw new Error("The original form is no longer on the page.");
+        postBoundStatus("Sent to the site…");
+        refreshAfterAction();
+      } catch (err) {
+        postBoundStatus(err.message, true);
+      }
+      return;
+    }
+    if (page.site !== "irctc") return;
+    try {
+      postBoundStatus("Checking stations…");
+      for (const id of msg.stationIds || []) await selectStation(boundElement(id));
+      for (const field of msg.fields || []) {
+        const el = boundElement(field.id);
+        if (el && !/From|To/i.test(`${el.placeholder || ""} ${el.getAttribute("aria-label") || ""}`)) {
+          await updateBoundControl({ ...field, event: "change" });
+        }
+      }
+      const submit = boundElement(msg.submitId);
+      if (!submit) throw new Error("The original Find Trains button is unavailable.");
+      postBoundStatus("Opening IRCTC train results…");
+      await wait(120);
+      setOverlay(false);
+      submit.click();
+    } catch (err) {
+      postBoundStatus(err.message, true);
+    }
+  }
+
   window.addEventListener("message", (event) => {
     if (!overlay || event.source !== overlay.contentWindow) return;
     const msg = event.data;
@@ -133,14 +369,13 @@ RULES
     }
     else if (msg.type === "toggle") setOverlay(!overlayVisible);
     else if (msg.type === "select-section") panel.openRemix(msg.section);
+    else if (msg.type === "bound-input") updateBoundControl(msg);
+    else if (msg.type === "bound-submit") submitBoundForm(msg);
+    else if (msg.type === "bound-click") clickBound(msg);
     else if (msg.type === "navigate") {
       if (msg.newTab) window.open(msg.href, "_blank");
       else location.href = msg.href;
-    } else if (msg.type === "search") {
-      location.href = page.site === "wikipedia"
-        ? `${location.origin}/w/index.php?search=${encodeURIComponent(msg.q)}`
-        : `https://hn.algolia.com/?q=${encodeURIComponent(msg.q)}`;
-    }
+    } else if (msg.type === "search") runSearch(String(msg.q || ""));
   });
 
   window.addEventListener("keydown", (event) => {
@@ -163,14 +398,25 @@ RULES
       if (options.ctl) options.ctl.cancel = () => { finish(); reject(new Error("cancelled")); };
       port.onMessage.addListener((msg) => {
         if (msg.type === "delta") onDelta(msg);
+        else if (msg.type === "note") options.onNote?.(msg.text);
         else if (msg.type === "done") { finish(); resolve(msg.text); }
         else if (msg.type === "error") { finish(); reject(new Error(msg.message)); }
       });
-      port.postMessage({ type: "generate", system, user, model, images: options.images, effort: options.effort, maxTokens: options.maxTokens });
+      port.postMessage({ type: "generate", system, user, model, images: options.images, effort: options.effort, maxTokens: options.maxTokens, tools: options.tools });
     });
   }
 
-  function userPrompt(stylePrompt, data, siblingStyle) {
+  const siteSummary = (data) => [data.site, data.brand?.name, data.title || data.pageTitle || data.story?.title, data.description, data.archetype, page.type].filter(Boolean).join(" ");
+  async function designReference(stylePrompt, data) {
+    try {
+      const res = await chrome.runtime.sendMessage({ type: "design-ref", style: stylePrompt, site: siteSummary(data) });
+      return res?.text || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function userPrompt(stylePrompt, data, sibling, designRef = "") {
     let s = `STYLE REQUEST: "${stylePrompt}"
 PAGE TYPE: ${page.type}
 
@@ -179,12 +425,23 @@ ${X.schema(page.type)}
 
 SAMPLE DATA (trimmed; real pages are longer):
 ${JSON.stringify(X.sample(data, page.type), null, 1)}`;
-    if (siblingStyle) {
+    if (page.site === "irctc") {
+      s += `\n\nThe original IRCTC viewport is attached as an image. Use it only to understand brand and page hierarchy; the JSON is the source of truth for content and controls.`;
+    }
+    if (page.generic) {
       s += `
 
-DESIGN SYSTEM TO MATCH: another page type on this site already uses the CSS below. Reuse its fonts, colours and component language so the whole site feels like one product.
-${siblingStyle}`;
+ARCHETYPE: ${data.archetype}. "outline" in the sample lists every section and its block types; the real page has all of them.
+Screenshots of the original page (top, then mid-page) are attached. Use them to understand what the site is for, its brand and what matters most; the JSON is the source of truth.
+This renderer will be reused on OTHER ${data.archetype} pages from other websites in the same style, so keep it fully data-driven.`;
     }
+    if (sibling?.style) {
+      s += `
+
+DESIGN SYSTEM TO MATCH: another page type in this style already uses the design below. Reuse its fonts, colours and component language so everything feels like one product.
+${sibling.thesis ? `THESIS:\n${sibling.thesis}\n\n` : ""}${sibling.style}`;
+    }
+    if (designRef) s += `\n\nDESIGN REFERENCE (UI UX Pro Max library matches for this request and site):\n${designRef}`;
     return s;
   }
 
@@ -209,7 +466,7 @@ Return the complete revised renderer, not a patch.`;
   const REVIEW_SYSTEM = `You are a meticulous design QA lead. You receive screenshots of an AI-generated redesign of a web page, captured top to bottom (they sample a long page, so gaps between them are normal), plus findings from automated checks.
 
 Report only real defects a visitor would notice. Do not criticise choices the style request asked for.
-- high: overlapping or illegible text, content cut off or hidden, empty or placeholder content, stray debugging text, elements escaping their containers, huge accidental blank regions, a layout that is clearly broken.
+- high: text that talks about the redesign itself instead of the site's content (e.g. "a graphic-novel frame for listings"), empty placeholder panels, icons, badges, logos or avatars blown up far beyond their natural size (pixelated, or stacked one per row filling the width), overlapping or illegible text, content cut off or hidden, empty or placeholder content, stray debugging text, elements escaping their containers, huge accidental blank regions, a layout that is clearly broken.
 - medium: weak contrast, cramped or uneven spacing, misalignment, awkward image crops, elements that look unintended.
 - low: matters of taste.
 
@@ -269,6 +526,46 @@ Fix every high and medium defect while keeping the same design direction, all co
     reviewCtl = null;
     panel.setHidden(false);
     panel.toast(null);
+  }
+
+  async function captureVisiblePage() {
+    panel.setHidden(true);
+    try {
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const shot = await chrome.runtime.sendMessage({ type: "capture" });
+      if (!shot || shot.error) throw new Error(shot?.error || "Screenshot failed.");
+      return shot.dataUrl;
+    } finally {
+      panel.setHidden(false);
+    }
+  }
+
+  // Top and mid-page views of the ORIGINAL page, so the model sees the brand and the hierarchy.
+  async function captureOriginalShots() {
+    if (overlayVisible) {
+      setOverlay(false);
+      await sleep(700);
+    }
+    removeCover();
+    const startY = scrollY;
+    const shots = [];
+    try {
+      scrollTo({ top: 0, behavior: "instant" });
+      await sleep(250);
+      shots.push(await captureVisiblePage());
+      const max = document.documentElement.scrollHeight - innerHeight;
+      if (max > innerHeight * 0.8) {
+        await sleep(550); // captureVisibleTab allows two calls per second
+        scrollTo({ top: Math.round(max * 0.45), behavior: "instant" });
+        await sleep(450);
+        shots.push(await captureVisiblePage());
+      }
+    } catch {
+      // Screenshots are a hint; generation continues without them.
+    } finally {
+      scrollTo({ top: startY, behavior: "instant" });
+    }
+    return shots;
   }
 
   async function captureShots(run) {
@@ -331,9 +628,7 @@ Fix every high and medium defect while keeping the same design direction, all co
         return;
       }
       currentCode = fixed;
-      await chrome.storage.local.set({
-        [RENDERER_KEY]: { code: fixed, prompt, model, style: extractStyle(fixed), created: Date.now(), reviewed: true },
-      });
+      await chrome.storage.local.set({ [rendererKey]: rendererRecord(fixed, prompt, model, { reviewed: true }) });
       panel.toast(`Polished · fixed ${issues.length} issue${issues.length === 1 ? "" : "s"} found by AI review`);
       panel.status(`AI review fixed: ${issues.map((i) => i.problem).join(" · ").slice(0, 400)}`);
     } catch (err) {
@@ -342,6 +637,81 @@ Fix every high and medium defect while keeping the same design direction, all co
       panel.status(`AI review skipped: ${err.message.split("\n")[0]}`, true);
     } finally {
       if (run === reviewRun) reviewCtl = null;
+    }
+  }
+
+  // ---------- prompt writer: study the page (and optionally the web), propose art directions ----------
+  const PROMPT_SYSTEM = `You are a creative director who writes briefs for an AI that completely rebuilds web pages: new information architecture, layout, components, typography, colour and motion, while keeping all real content and keeping the site working.
+
+You receive a screenshot of the original page, its URL, a sample of its extracted content, and optional notes from the user. You may have a web search tool: if so, use it briefly to learn what the site or brand is, who uses it and what it is known for. Do not research if the page already makes that obvious.
+
+Write THREE distinct redesign prompts:
+1. "Elevated": faithful to the brand and audience, but far better crafted.
+2. "Bold": a daring creative concept rooted in the site's subject, culture or history.
+3. "Task-first": built around the visitor's primary task, ideal for speed, clarity and accessibility.
+If the user's notes ask for something specific, all three must honour it.
+
+Each prompt is 60-110 words of concrete art direction:
+- the concept or metaphor;
+- who the page is for and what it must make easy;
+- the layout structure and two or three signature components invented for THIS content;
+- typography, as named Google Fonts;
+- the palette, naming the brand colour role;
+- the motion idea;
+- the tone of microcopy.
+No generic adjectives without specifics. Never ask to remove content or invent facts.
+Steer clear of the default looks of AI-generated pages: cream plus terracotta, near-black plus one acid-green accent, identical rounded SaaS cards with soft shadows, ALL-CAPS eyebrow labels, and gradient washes. Use one only when the notes ask for it. Each direction should spend its boldness on one memorable element.
+
+Return ONLY JSON:
+{"site":"one line on what this site is","ideas":[{"name":"2-4 word title","prompt":"..."}]}`;
+
+  async function suggestPrompts(notes) {
+    if (busy) return;
+    busy = true;
+    const wasVisible = overlayVisible;
+    try {
+      const { model } = await chrome.storage.local.get("model");
+      const useModel = model || MODELS[0];
+      panel.status("Studying the page…");
+      const data = await extractPageData();
+      const shots = (await captureOriginalShots()).slice(0, 1);
+      if (wasVisible && currentCode) setOverlay(true);
+      const name = data.brand?.name || data.site || location.hostname;
+      panel.status(`Researching ${name} and writing prompts with ${useModel}…`);
+      panel.toast(`Prompt writer · researching ${name}`, true);
+      const user = `URL: ${location.href}
+PAGE TYPE: ${page.type}${data.archetype ? ` (${data.archetype})` : ""}
+USER NOTES: ${notes ? `"${notes}"` : "none"}
+
+CONTENT SAMPLE:
+${JSON.stringify(X.sample(data, page.type)).slice(0, 7000)}
+
+DESIGN LIBRARY MATCHES (UI UX Pro Max; ground fonts and palettes in these where they fit, but stay original):
+${await designReference(notes, data)}`;
+      const text = await stream(PROMPT_SYSTEM, user, useModel, () => {}, {
+        images: shots,
+        maxTokens: 4000,
+        tools: [{ type: "web_search" }],
+        onNote: (note) => panel.toast(`Prompt writer · ${note}`, true),
+      });
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("The prompt writer did not return JSON.");
+      const result = JSON.parse(match[0]);
+      const ideas = (Array.isArray(result.ideas) ? result.ideas : [])
+        .filter((i) => i && typeof i.prompt === "string" && i.prompt.trim())
+        .slice(0, 3)
+        .map((i) => ({ name: String(i.name || "Idea").slice(0, 40), prompt: i.prompt.trim().slice(0, 1200) }));
+      if (!ideas.length) throw new Error("The prompt writer returned no ideas.");
+      panel.showIdeas(ideas, String(result.site || "").slice(0, 200));
+      panel.toast("Prompt writer · 3 directions ready");
+      panel.status("Pick a direction to put it in the prompt box, edit it if you like, then Remodel.");
+    } catch (err) {
+      if (wasVisible && currentCode) setOverlay(true);
+      panel.toast(null);
+      panel.status(`Prompt writer failed: ${err.message.split("\n")[0]}`, true);
+      if (/HTTP 401|API key/i.test(err.message)) panel.showKey();
+    } finally {
+      busy = false;
     }
   }
 
@@ -355,23 +725,38 @@ Fix every high and medium defect while keeping the same design direction, all co
     busy = true;
     cancelReview();
     const started = Date.now();
-    const { model } = await chrome.storage.local.get("model");
-    const useModel = model || MODELS[0];
+    let useModel = MODELS[0];
     try {
+      const { model } = await chrome.storage.local.get("model");
+      useModel = model || MODELS[0];
+      const data = await extractPageData();
+      if (page.generic && (!remix || !rendererKey)) {
+        rendererKey = genericKey(data.archetype, remix ? (currentPrompt || stylePrompt) : stylePrompt);
+        if (!remix && await reuseGeneric(stylePrompt, data, started)) return;
+      }
+      let referenceImages = [];
+      if (!remix && page.site === "irctc") {
+        panel.status("Looking at the original IRCTC page…");
+        try { referenceImages = [await captureVisiblePage()]; } catch {}
+      } else if (!remix && page.generic) {
+        panel.status(`Looking at ${data.brand.name} · ${data.archetype} page, ${data.stats.sectionCount} sections…`);
+        referenceImages = await captureOriginalShots();
+      }
       setOverlay(false);
       removeCover();
-      const data = X.extract(page.type);
       const all = await chrome.storage.local.get(null);
-      const sibling = Object.entries(all).find(([k]) => k.startsWith(`renderer:${page.site}:`) && k !== RENDERER_KEY)?.[1];
+      const sibling = page.generic
+        ? Object.entries(all).find(([k]) => k.startsWith("renderer:generic:") && k.endsWith(`:${promptHash(stylePrompt)}`) && k !== rendererKey)?.[1]
+        : Object.entries(all).find(([k]) => k.startsWith(`renderer:${page.site}:`) && k !== rendererKey)?.[1];
 
       C.start();
       panel.status(remix ? `Remixing “${remix.section.title}” with ${useModel}…` : `Directing with ${useModel}…`);
       const user = remix
         ? remixPrompt(currentPrompt || stylePrompt, remix.instruction, remix.section, data, currentCode)
-        : userPrompt(stylePrompt, data, sibling?.style);
+        : userPrompt(stylePrompt, data, sibling, await designReference(stylePrompt, data));
       const onDelta = (m) => panel.progress(m.delta, m.length, started);
 
-      let code = extractCode(await stream(SYSTEM, user, useModel, onDelta));
+      let code = extractCode(await stream(SYSTEM, user, useModel, onDelta, { images: referenceImages }));
       try {
         await render(code, data, { focusSection: remix?.section.id || null });
       } catch (err) {
@@ -396,7 +781,7 @@ Return the complete corrected code in one \`\`\`js block.`;
       currentCode = code;
       currentPrompt = remix ? (currentPrompt || stylePrompt) : stylePrompt;
       await chrome.storage.local.set({
-        [RENDERER_KEY]: { code, prompt: currentPrompt, model: useModel, style: extractStyle(code), created: Date.now() },
+        [rendererKey]: rendererRecord(code, currentPrompt, useModel),
         [SITE_KEY]: { enabled: true, prompt: currentPrompt },
       });
       panel.status(`${remix ? "Remix" : "Design"} done in ${Math.round((Date.now() - started) / 1000)} s. Hover a chapter to remix it. Alt+R toggles.`);
@@ -406,9 +791,13 @@ Return the complete corrected code in one \`\`\`js block.`;
     } catch (err) {
       C.stop();
       removeCover();
+      if (/Extension context invalidated/i.test(err.message)) {
+        panel.status("The extension was reloaded. Refresh this tab, then try again.", true);
+        return;
+      }
       if (remix && currentCode) {
         try {
-          await render(currentCode, X.extract(page.type), { focusSection: remix.section.id });
+          await render(currentCode, await extractPageData(), { focusSection: remix.section.id });
           setOverlay(true);
           panel.status(`Remix failed; restored the previous design. ${err.message}`, true);
         } catch {
@@ -424,12 +813,35 @@ Return the complete corrected code in one \`\`\`js block.`;
     }
   }
 
-  async function applyCached(rec) {
+  // A design made on another website for the same archetype and style is applied instantly with this
+  // site's branding. Pressing Remodel again with the same prompt generates a fresh one.
+  let offeredReuse = "";
+  async function reuseGeneric(stylePrompt, data, started) {
+    const rec = (await chrome.storage.local.get(rendererKey))[rendererKey];
+    if (!rec || rec.host === location.hostname || offeredReuse === rendererKey) return false;
+    offeredReuse = rendererKey;
+    try {
+      await render(rec.code, data);
+    } catch {
+      return false;
+    }
+    removeCover();
+    setOverlay(true);
+    currentCode = rec.code;
+    currentPrompt = stylePrompt;
+    await chrome.storage.local.set({ [SITE_KEY]: { enabled: true, prompt: stylePrompt } });
+    panel.toast(`Instant · reused the ${data.archetype} design from ${rec.host}`);
+    panel.status(`Reused your ${data.archetype} design from ${rec.host} in ${((Date.now() - started) / 1000).toFixed(1)} s, with ${data.brand.name}'s branding. Press Remodel again for a fresh design.`);
+    panel.collapse();
+    return true;
+  }
+
+  async function applyCached(rec, data = null) {
     cancelReview();
     try {
       currentCode = rec.code;
       currentPrompt = rec.prompt || "";
-      await render(rec.code, X.extract(page.type));
+      await render(rec.code, data || await extractPageData());
       setOverlay(true);
     } catch (err) {
       removeCover();
@@ -443,7 +855,9 @@ Return the complete corrected code in one \`\`\`js block.`;
     const all = await chrome.storage.local.get(null);
     await chrome.storage.local.remove(Object.keys(all).filter((k) => k.startsWith(`renderer:${page.site}:`) || k === SITE_KEY));
     setOverlay(false);
-    panel.status("Reset. This site is back to normal.");
+    panel.status(page.generic
+      ? "Reset. This site is back to normal; saved styles stay available for other sites."
+      : "Reset. This site is back to normal.");
   }
 
   // ---------- panel ----------
@@ -461,7 +875,9 @@ Return the complete corrected code in one \`\`\`js block.`;
       root = hostEl.attachShadow({ mode: "open" });
       root.innerHTML = `
         <style>
+          :host { all: initial; color-scheme: light; }
           * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+          button, textarea, input, select { color: #111; }
           .pill { background: #111; color: #fff; border: 0; border-radius: 999px; padding: 10px 16px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
           .card { width: 360px; background: #fff; color: #111; border-radius: 16px; padding: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.28); display: none; }
           .open .card { display: block; } .open .pill { display: none; }
@@ -475,6 +891,12 @@ Return the complete corrected code in one \`\`\`js block.`;
           .modelrow select { width: auto; min-width: 0; flex: 1; }
           .go { flex: 1; background: #111; color: #fff; border: 0; border-radius: 10px; padding: 10px; font-weight: 700; cursor: pointer; }
           .ghost { background: #f2f2f2; border: 0; border-radius: 10px; padding: 8px 10px; font-size: 12px; cursor: pointer; }
+          .ideas { display: none; margin-top: 8px; max-height: 300px; overflow: auto; }
+          .ideas.on { display: block; }
+          .ideasite { font-size: 11px; color: #666; margin-bottom: 6px; }
+          .idea { display: block; width: 100%; text-align: left; border: 1.5px solid #ddd; background: #fafafa; border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; font-size: 12px; line-height: 1.35; color: #333; }
+          .idea:hover, .idea:focus-visible { border-color: #111; background: #fff; }
+          .idea b { display: block; font-size: 12px; color: #111; margin-bottom: 3px; }
           .remixbox { display: none; margin-top: 10px; padding: 10px; border: 1.5px solid #111; border-radius: 12px; background: #fffbea; }
           .remixbox.on { display: block; }
           .remixtitle { font-size: 11px; font-weight: 800; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -507,8 +929,10 @@ Return the complete corrected code in one \`\`\`js block.`;
                 <button class="ghost cancelkey">Cancel</button>
               </div>
             </div>
-            <textarea class="prompt" placeholder="Describe the redesign…"></textarea>
+            <textarea class="prompt" placeholder="Describe the redesign, or jot a few notes about the site and press Suggest prompts…"></textarea>
             <div class="chips">${PRESETS.map((p) => `<button class="chip">${p}</button>`).join("")}</div>
+            <button class="ghost suggest" style="width:100%">✨ Suggest prompts for this site</button>
+            <div class="ideas"></div>
             <div class="row modelrow">
               <select class="model">${MODELS.map((m) => `<option>${m}</option>`).join("")}</select>
               <button class="ghost keytoggle">Change API key</button>
@@ -542,6 +966,7 @@ Return the complete corrected code in one \`\`\`js block.`;
         if (p) generate(p);
         else status("Type a style or pick one.", true);
       };
+      $(".suggest").onclick = () => suggestPrompts($(".prompt").value.trim());
       $(".toggle").onclick = () => setOverlay(!overlayVisible);
       $(".reset").onclick = resetSite;
       $(".keytoggle").onclick = () => {
@@ -635,8 +1060,34 @@ Return the complete corrected code in one \`\`\`js block.`;
       if (!isBusy) toastTimer = setTimeout(() => el.classList.remove("on"), 5000);
     }
     function setHidden(hidden) { if (hostEl) hostEl.style.visibility = hidden ? "hidden" : ""; }
+    // Idea text comes from the model, so it is set with textContent, never as HTML.
+    function showIdeas(ideas, site) {
+      mount();
+      expand();
+      const box = $(".ideas");
+      box.replaceChildren();
+      if (site) {
+        const line = document.createElement("div");
+        line.className = "ideasite";
+        line.textContent = site;
+        box.append(line);
+      }
+      for (const idea of ideas) {
+        const button = document.createElement("button");
+        button.className = "idea";
+        const title = document.createElement("b");
+        title.textContent = idea.name;
+        button.append(title, idea.prompt);
+        button.onclick = () => {
+          $(".prompt").value = idea.prompt;
+          $(".prompt").focus();
+        };
+        box.append(button);
+      }
+      box.classList.add("on");
+    }
 
-    return { mount, expand, collapse, showKey, openRemix, status, progress, finishProgress, updateToggle, toast, setHidden };
+    return { mount, expand, collapse, showKey, openRemix, status, progress, finishProgress, updateToggle, toast, setHidden, showIdeas };
   })();
 
   chrome.runtime.onMessage.addListener((msg) => {
@@ -644,9 +1095,34 @@ Return the complete corrected code in one \`\`\`js block.`;
   });
 
   // ---------- startup: auto-apply a saved design ----------
-  chrome.storage.local.get([RENDERER_KEY, SITE_KEY]).then((s) => {
+  chrome.storage.local.get([rendererKey, SITE_KEY].filter(Boolean)).then((s) => {
     const site = s[SITE_KEY];
-    const rec = s[RENDERER_KEY];
+    if (page.generic) {
+      if (!site?.enabled || !site.prompt) {
+        onReady(() => panel.mount());
+        return;
+      }
+      showCover();
+      onReady(async () => {
+        panel.mount();
+        try {
+          await pageLoaded();
+          const data = await extractPageData();
+          rendererKey = genericKey(data.archetype, site.prompt);
+          const rec = (await chrome.storage.local.get(rendererKey))[rendererKey];
+          if (rec) applyCached(rec, data);
+          else {
+            panel.expand();
+            generate(site.prompt);
+          }
+        } catch (err) {
+          removeCover();
+          panel.status(`Error: ${err.message}`, true);
+        }
+      });
+      return;
+    }
+    const rec = s[rendererKey];
     if (site?.enabled && rec) {
       showCover();
       onReady(() => { panel.mount(); applyCached(rec); });
@@ -657,4 +1133,25 @@ Return the complete corrected code in one \`\`\`js block.`;
       onReady(() => panel.mount());
     }
   });
+  }
+
+  // IRCTC can enter /nget/train-search through Angular routing after the
+  // document-start scripts have run. Keep watching briefly instead of
+  // permanently returning because the first URL was not supported.
+  const started = Date.now();
+  let routeTimer = 0;
+  const tryBoot = () => {
+    if (booted) return true;
+    const page = X?.detect();
+    if (!page) return false;
+    booted = true;
+    clearInterval(routeTimer);
+    boot(page);
+    return true;
+  };
+  if (!tryBoot()) {
+    routeTimer = setInterval(() => {
+      if (tryBoot() || Date.now() - started > 60000) clearInterval(routeTimer);
+    }, 250);
+  }
 })();

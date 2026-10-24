@@ -1,21 +1,24 @@
 {
   "manifest_version": 3,
   "name": "Remodel (prototype)",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Rebuild any page from a prompt. The site keeps working.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "scripting"],
   "host_permissions": ["https://api.openai.com/*", "<all_urls>"],
   "background": { "service_worker": "background.js" },
-  "action": { "default_title": "Remodel" },
+  "action": { "default_title": "Remodel (Alt+Shift+M)" },
+  "commands": {
+    "_execute_action": { "suggested_key": { "default": "Alt+Shift+M" }, "description": "Open the Remodel panel" }
+  },
   "content_scripts": [
     {
-      "matches": ["https://*.wikipedia.org/*", "https://news.ycombinator.com/*"],
+      "matches": ["<all_urls>"],
       "js": ["extractors.js", "cursors.js", "content.js"],
       "run_at": "document_start"
     }
   ],
   "sandbox": { "pages": ["sandbox.html"] },
   "web_accessible_resources": [
-    { "resources": ["sandbox.html", "sandbox.js"], "matches": ["https://*.wikipedia.org/*", "https://news.ycombinator.com/*"] }
+    { "resources": ["sandbox.html", "sandbox.js"], "matches": ["<all_urls>"] }
   ]
 }
