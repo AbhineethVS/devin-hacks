@@ -15,6 +15,20 @@ No project implementation has been recorded yet. Add entries as you build:
 - Limitations: <known issues, or "None identified in these checks">
 ```
 
+## 2026-10-24T21:58:00+05:30 — Card 0: project scaffold
+
+- Changed:
+  - Vite + strict TypeScript app. npm scripts: `dev`, `build` (tsc + vite), `test` (Vitest), `lint` (ESLint + Prettier), `format`.
+  - Dependencies pinned to exact versions published before 2026-10-17 (`npm install --before`): tone, @codemirror/{state,view,language,lang-javascript,lang-cpp,lang-python}, lz-string, lucide. Dev: typescript, vite, vitest, eslint, typescript-eslint, prettier.
+  - Contract stubs with the CONTRACTS.md signatures in `src/engine`, `src/tracer`, `src/packs`, `src/ui`, `src/viz`, `src/github`, `src/share`, `src/ai`. Shared types live in `src/engine/types.ts`.
+  - `src/presets.ts`: bubble sort, quicksort, C-style `for` with `int`, buggy infinite loop, recursive fibonacci.
+  - Placeholder layout (`index.html`, `src/main.ts`, `src/styles.css`): top bar, editor, visualizer, status bar and transport, styled per skills/ui-quality.
+  - `vercel.json` and `api/health.ts` (`GET /api/health` → `{ ok: true }`). API tests live in `tests/` so Vercel doesn't deploy them as functions.
+  - CONTRACTS.md: documented conventions (1-based lines, factory names, the types file, stub markers). No shapes changed.
+- Why: give the parallel task cards a working build and fixed module signatures to code against.
+- Validation: `npm run build` passed. `npm test` passed: 10 files, 16 tests. `npm run lint` passed. Dev server loads at 1440×900 (screenshot in `docs/media/card-0-scaffold.png`).
+- Limitations: there's no audio, tracer or real editor yet; Play file and Run only show a status message. Stubs throw "Not implemented". `/api/health` hasn't been tested on Vercel yet. No browser console capture was done; the screenshot only shows that `main.ts` ran to completion.
+
 ## 2026-10-24T21:42:00+05:30 — Fresh Syntune README
 
 - Changed: replaced `README.md` with a new Syntune README (idea, planned features with status, stack, planned commands, doc links, prior art).

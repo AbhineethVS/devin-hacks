@@ -37,16 +37,17 @@ Vite + TypeScript (strict), vanilla DOM, [CodeMirror 6](https://codemirror.net/)
 
 ## Run the project
 
-Setup commands are added once the scaffold lands. Planned:
+Prerequisites: Node.js 20 or newer (developed on Node 24).
 
 ```bash
 npm install
-npm run dev     # start the app
-npm run build   # type-check and build
-npm test        # unit tests
+npm run dev     # start the app at http://localhost:5173
+npm run build   # type-check (tsc) and build to dist/
+npm test        # Vitest unit tests
+npm run lint    # ESLint + Prettier check (npm run format to fix)
 ```
 
-The AI features need `OPENAI_API_KEY`, set in Vercel or a local `.env.local` that is never committed.
+Right now the app is a placeholder layout with presets; the engine, tracer and editor are stubs that later task cards replace. The AI features will need `OPENAI_API_KEY`, set in Vercel or a local `.env.local` that is never committed.
 
 ## Project docs
 
