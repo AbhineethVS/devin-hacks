@@ -1,17 +1,28 @@
 # AI usage record
 
-Use Devin during the hackathon and briefly document its actual contribution here. Add a row after each meaningful task or milestone. Keep summaries concise and omit secrets, private data, and full chat transcripts.
+Build with Devin during the hackathon and briefly record its actual contribution here: one row per Devin session or meaningful task. Disclose **every** AI tool used, not only Devin. Keep summaries concise; omit secrets, private data and full transcripts.
 
-## Event build log
+## Event build log (Devin sessions)
 
-No participant AI usage has been recorded yet. Replace the placeholder row as you build. Mark human review as pending until someone has reviewed the contribution.
+Mark human review as "Pending" until you have reviewed (and listened to) the result.
 
-| Date and time with timezone | Tool / model, if known | Task | Assistance and affected files | Human review / corrections | Validation and result |
-| --- | --- | --- | --- | --- | --- |
-| TODO | Devin | TODO | TODO | Pending | TODO |
+| Date and time (IST) | Tool / model | Task card | Session link | PR | What it built (files) | Human review / corrections | Validation and result |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TODO | Devin | Card 0: Scaffold | TODO | TODO | TODO | Pending | TODO |
 
-## Template preparation
+## Other AI tools used during the event
 
-On 10 October 2026, Codex prepared this documentation template from the organizer's supplied rules and checked the linked Luma page for the event name and dates. This covered `README.md`, `RULES.md`, `AGENTS.md`, `CHANGELOG.md`, `AI_USAGE.md`, `SUBMISSION.md`, `.gitignore`, and the pull request checklist. Agent validation covered local links, event consistency, required documents, and diff whitespace; organizer review is pending.
+| Tool | What it was used for | Where it appears |
+| --- | --- | --- |
+| OpenAI API | Runtime AI features ("Sounds like…", "Why does it sound wrong?") | `api/` |
+| TODO | TODO | TODO |
 
-This preparation is separate from participant project implementation and participant AI usage during the event.
+## Planning and template preparation (before implementation)
+
+On 24 October 2026 at the event, **Claude Code** (Anthropic) was used to:
+- adapt this documentation template from the previous DevDay template
+- research and choose the project idea
+- write a throwaway sound test page outside this repository
+- draft the planning docs: `AGENTS.md`, `RULES.md`, `README.md`, `SUBMISSION.md`, `CHANGELOG.md`, `AI_USAGE.md`, `CONTRACTS.md`, `docs/`, `skills/`, `agents/`, and the pull request template
+
+No application code from that session is in this repository. TODO: the participant should review this note and keep it accurate.

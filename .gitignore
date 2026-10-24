@@ -6,19 +6,19 @@
 *.pem
 *.key
 
-# Common dependencies, build output, caches, and local tooling.
+# Dependencies, build output, caches, and local tooling.
 node_modules/
-.next/
 dist/
 build/
 coverage/
-.venv/
-venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
+.vercel/
+.vite/
+playwright-report/
+test-results/
 .DS_Store
 Thumbs.db
 *.log
 
-# Add entries appropriate to your chosen language or framework.
+# Audio/video exports made while testing.
+*.webm
+*.wav

@@ -1,53 +1,89 @@
-# Agent guide for hackathon projects
+# AGENTS.md: rules for every agent working in this repo
 
-## Event requirements
+**Syntune** (working name) turns code into music.
+- **Play file** plays the source text, token by token, as a song.
+- **Run** executes the program and plays its execution: loops repeat, data drives melody, errors and infinite loops are audible.
 
-- Read [RULES.md](RULES.md) before working. Build project implementation from scratch at the event; do not import a pre-built project.
-- Libraries, APIs, and public datasets are allowed. Document their sources and use.
-- Use Devin during development and briefly record its actual contribution in [AI_USAGE.md](AI_USAGE.md).
-- Prepare a code repository, short project description, and working demo in [SUBMISSION.md](SUBMISSION.md).
+This is a solo, overnight hackathon build with a hard demo deadline. **Working and polished beats clever and broad.**
+
+## Read first, every session
+1. [RULES.md](RULES.md): the event rules. Build from scratch at the event, solo, with Devin.
+2. [CONTRACTS.md](CONTRACTS.md): interfaces and data shapes. **Do not change a contract silently.** If you must, say so in the PR under "Contract change" with the reason.
+3. [docs/PRODUCT.md](docs/PRODUCT.md): what we're building and the scope.
+4. Your role brief in `agents/` and the skills named in your task card ([docs/TASK_CARDS.md](docs/TASK_CARDS.md)).
+
+## Stack (fixed; don't introduce alternatives)
+- **Vite + TypeScript (strict)**, vanilla DOM, no UI framework.
+- **CodeMirror 6** for the editor.
+- **Tone.js** for audio.
+- **Canvas 2D** for visuals.
+- **Vitest** for unit tests. **Playwright** only for a smoke test if time allows.
+- **Vercel** for hosting. Serverless functions in `api/` hold the OpenAI key (`OPENAI_API_KEY`). **Never put a key in client code or commit one.**
+- **lz-string** for share links.
+- Any other runtime dependency needs one line of justification in the PR.
+
+## Layout and file ownership
+```
+src/
+  engine/   tokenizer, sound mapping, step builders, scheduler   (audio-engineer)
+  tracer/   instrumentation, worker runner, trace → steps        (tracer-engineer)
+  packs/    sound packs (data + instrument factories)            (audio-engineer)
+  ui/ viz/ github/ share/   editor, visualizer, GitHub loading, share/export   (frontend-builder)
+  ai/       client for /api endpoints                            (ai-integrator)
+api/        Vercel functions: generate.ts, explain.ts            (ai-integrator)
+docs/ skills/ agents/                                            (human + docs-writer)
+```
+Stay inside the folders your task names. Keep changes elsewhere minimal and call them out in the PR.
 
 ## Use basic coding patterns
+- Straightforward, idiomatic code: small functions, clear names, simple data structures, one responsibility per module.
+- The simplest implementation that meets the requirement. No speculative abstractions or features.
+- Few, purposeful dependencies.
+- Validate inputs, handle errors explicitly, show useful failure messages. **Never hide failures behind fake success or demo data.**
+- Explain non-obvious decisions in short comments.
 
-- Prefer straightforward, idiomatic code: small functions, clear names, simple data structures, and modules with one clear responsibility.
-- Use the project's existing patterns. Add an abstraction only when an actual repeated need makes the code easier to understand.
-- Choose the simplest implementation that meets the current requirement. Avoid unnecessary layers, generic frameworks, premature optimization, and speculative features.
-- Keep dependencies few and purposeful. Reuse appropriate standard libraries and established libraries instead of reimplementing them.
-- Validate inputs, handle errors explicitly, and show useful failure messages. Do not hide failures behind fabricated success or demo data.
-- Keep changes focused. Explain the reason for non-obvious decisions in short comments or project documentation.
+## Commands (keep them working; list them in README.md as soon as they exist)
+- `npm run dev` starts the app.
+- `npm run build` must pass with no TypeScript errors.
+- `npm test` runs Vitest and must pass.
+- `npm run lint` if configured.
+
+## Definition of done for any task
+- [ ] Build, tests and lint pass. Report what actually ran and its result.
+- [ ] New logic in `engine/`, `tracer/` and `packs/` has unit tests.
+- [ ] The PR has: what changed, how to try it, **a screenshot or short GIF**, and known limitations.
+- [ ] No console errors when using the feature.
+- [ ] Audio still starts only after a user gesture (`Tone.start()`).
+- [ ] [CHANGELOG.md](CHANGELOG.md) has an entry for the change (real timestamp, what, why, validation, limitations).
+- [ ] [README.md](README.md) is updated if setup, commands or behaviour changed.
 
 ## Document every meaningful change
+- **CHANGELOG.md:** update it in the same commit or PR as each meaningful change.
+- **AI_USAGE.md:** the human records each Devin session (card, session link, PR, what Devin built, what was changed by hand). Devin may draft its own row in the PR description for the human to copy.
+- **Keep claims accurate.** Distinguish working and verified behaviour from planned work. Never invent test results, deployment success, AI usage or timestamps.
 
-- Update [CHANGELOG.md](CHANGELOG.md) in the same commit as each meaningful change. Record the date and time with timezone, what changed, why, the affected files or feature, validation performed, and known limitations.
-- Update [README.md](README.md) whenever setup, commands, environment requirements, project behavior, or demo instructions change.
-- Update [AI_USAGE.md](AI_USAGE.md) whenever Devin makes a meaningful contribution. Record the task, assistance, human review status, checks, and any corrections. Brief summaries are enough; full chat transcripts are unnecessary.
-- Keep claims accurate. Distinguish implemented and verified behavior from planned or incomplete work. Never invent test results, deployment success, AI usage, or commit timestamps.
+## Regular, honest commits
+1. **One task card = one PR.** Small, coherent changes.
+2. The human merges PRs as they're ready, **aiming for a meaningful checkpoint about every 30 minutes** while building. Never leave the night's work for one final commit.
+3. Short, descriptive conventional messages: `feat:`, `fix:`, `chore:`, `docs:`, `test:`.
+4. **No empty commits to satisfy the clock.** No backdating, no squashing away the event's history, no force-pushing or rewriting shared history.
+5. If work is incomplete at a handoff, use an honest `wip:` message and say what's missing.
 
-## Make regular, timely commits
+## Hard rules
+- **The music must never crash the app.** User code runs only in the tracer worker, with a step cap and a timeout. **AI-generated code is untrusted user code.** Never execute user or AI code on the server.
+- **Determinism:** the same code + pack + BPM always produces the same song. No `Math.random()` in mapping; use seeded hashes.
+- **Musical safety:** every pitched note comes from the active pack's scale.
+- **No secrets** in code, logs, PR descriptions or `.env.example`.
 
-1. Inspect `git status` before editing. Preserve teammates' work and identify files belonging to the current task.
-2. Finish a small, coherent change, run appropriate checks, and update its documentation.
-3. Review the diff and explicitly stage only the files for that change.
-4. **Commit after each completed milestone. While actively building, aim for a commit about every 30 minutes when meaningful changes are ready.** Do not leave the entire night's work for one final commit.
-5. Commit completed work before a handoff, a long break, or the end of a work session. If work is incomplete, document its state and use an honest `wip:` message for a useful checkpoint.
-6. Use short, descriptive messages, such as `feat: add project search`, `fix: handle empty results`, or `docs: explain local demo setup`.
-7. Do not create empty commits to satisfy the clock. Do not backdate commits, squash away the event development record, force-push, or rewrite shared history.
-8. Push committed checkpoints to the team's repository regularly, when network access is available and the team has authorized that remote. Resolve conflicts with care.
-
-The 30-minute target is this repository's working convention. It does not replace event rules or organizer instructions.
-
-## Check work and protect credentials
-
-- Use the project's actual install, run, lint, test, and build commands. Add them to the README as soon as they exist; this template does not prescribe a stack.
-- Run checks appropriate to the change. For a documentation-only change, check links and consistency. For code changes, verify the changed behavior and any relevant existing tests.
-- Report what ran and what passed, failed, or could not be checked. If a command fails, investigate or document the limitation before handoff.
-- Keep credentials, API keys, approved QR codes, and private participant data out of commits and logs. Use environment variables and sanitized examples; never put live keys in `.env.example`.
+## Known gotchas (learned the hard way; see skills/)
+- Tone mono synths **throw** if two notes start at the same instant → `skills/tone-scheduling`.
+- `let` variables referenced before their declaration throw (temporal dead zone) inside value probes → `skills/execution-tracing`.
+- Browsers block audio until a user gesture.
+- The GitHub API allows 60 requests/hour without a token → prefer raw URLs → `skills/github-file-loading`.
 
 ## Before submission
-
-- Complete [SUBMISSION.md](SUBMISSION.md), replacing all participant placeholders.
-- Confirm the README gives reproducible setup and demo steps.
-- Check that the working demo matches the submitted code and that known limitations are disclosed.
-- Update the changelog and AI usage record, commit the final coherent change, and push it.
-- Record the final submitted commit SHA in the submission details. Documentation may record that SHA in a subsequent commit; do not claim later implementation changes belong to the earlier demo.
-- Follow the organizers' actual submission method and timing. The event wraps up by 10:00 AM IST on 11 October 2026.
+- Complete [SUBMISSION.md](SUBMISSION.md).
+- Check that the README's setup and demo steps match the submitted code.
+- Check that the change log and AI usage record are complete, then commit and push.
+- Record the final submitted commit SHA in SUBMISSION.md.
+- Follow the organizers' submission method and deadline. The event ends **25 October 2026, 11:00 AM IST**.

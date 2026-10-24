@@ -1,48 +1,50 @@
 # Project submission
 
-Complete this file during the hackathon and use it to prepare your submission through the method announced by the organizers. Do not submit your project to the template repository.
+Complete this file during the hackathon and use it to prepare your submission through the method announced by the organizers.
 
 ## Project
 
-- **Project name:** TODO
-- **Short description:** TODO — describe the problem, what you built, and who benefits.
+- **Project name:** Syntune (working name). TODO: final name
+- **Track:** Make Room for Play. TODO: confirm with organizers whether a track must be declared
+- **Short description:** TODO: the problem, what you built, and who benefits.
 - **Code repository URL:** TODO
 - **Final submitted implementation commit SHA:** TODO
 - **Working demo URL or local demo steps:** TODO
-- **Demo access requirements:** TODO — explain any prerequisites without including private credentials.
+- **Demo video:** TODO
+- **Demo access requirements:** TODO (prerequisites without private credentials; note that audio needs a click to start and headphones help)
 
-## Participants
+## Participant
 
-Participate solo or in a team of up to 4. Remove unused rows.
+Solo hackathon.
 
 | Participant name | GitHub handle | Contribution |
 | --- | --- | --- |
-| TODO | TODO | TODO |
+| Abhineeth V S | [@AbhineethVS](https://github.com/AbhineethVS) | TODO |
 
 ## Run and demonstrate
 
 - **Prerequisites and versions:** TODO
 - **Install command:** TODO
-- **Required environment variable names:** TODO — use a sanitized example file if needed.
+- **Required environment variable names:** TODO (e.g. `OPENAI_API_KEY`; use a sanitized `.env.example`)
 - **Start command:** TODO
-- **Demo walkthrough:** TODO — brief steps showing the implemented features.
+- **Demo walkthrough:** TODO (follow [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md))
 - **Checks performed and results:** TODO
 - **Known limitations or incomplete features:** TODO
-- **Libraries, APIs, and public datasets used:** TODO — link sources and record attribution where required.
+- **Libraries, APIs and public datasets used:** TODO (link sources; keep licence and attribution for any bundled "famous code" files)
 - **AI usage record:** [AI_USAGE.md](AI_USAGE.md)
 - **Development change log:** [CHANGELOG.md](CHANGELOG.md)
 
 ## Submission checklist
 
 - [ ] The project implementation started from scratch at the event.
-- [ ] I participated solo or with no more than 4 team members in total.
-- [ ] Devin was used during development and its usage is documented.
-- [ ] The code repository URL, short description, and working demo are provided.
+- [ ] Built solo.
+- [ ] Devin was used during development, and its usage (and any other AI tools) is documented.
+- [ ] The code repository URL, short description, working demo and demo video are provided.
 - [ ] README setup and demo instructions match the submitted code.
 - [ ] Actual checks and known limitations are documented.
-- [ ] Meaningful changes are documented and committed throughout development.
+- [ ] Meaningful changes were documented and committed throughout development.
 - [ ] The final implementation is committed and pushed, and its SHA is recorded above.
-- [ ] No credentials or private data are included in the repository or demo instructions.
-- [ ] The organizers' announced submission method and timing have been followed.
+- [ ] No credentials or private data are in the repository or demo instructions.
+- [ ] The organizers' submission method and deadline were followed.
 
-Event reference: [Devin Hacks on Luma](https://luma.com/z10nz8gp). The event wraps up by **10:00 AM IST on 11 October 2026**.
+Event reference: [Devin Hacks Kochi on Luma](https://luma.com/3v8n74l1). The event ends **25 October 2026, 11:00 AM IST**.
