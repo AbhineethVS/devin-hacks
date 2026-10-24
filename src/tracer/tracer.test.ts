@@ -140,8 +140,13 @@ describe("executeInstrumented / traceSource", () => {
   });
 });
 
-/** A fake Worker that never answers, like one stuck in `while(true){}` with no traced statement. */
-function silentWorker() {
+/** Like the real worker: announce `{ ready: true }` once "loaded" (after a delay). */
+function announceReady(worker: TraceWorker, delayMs = 0): void {
+  setTimeout(() => worker.onmessage?.({ data: { ready: true } } as MessageEvent), delayMs);
+}
+
+/** A fake Worker that loads but never answers, like one stuck in `while(true){}` with no traced statement. */
+function silentWorker(readyDelayMs = 0) {
   const state = { terminated: false, posted: [] as unknown[] };
   const worker: TraceWorker = {
     onmessage: null,
@@ -149,6 +154,7 @@ function silentWorker() {
     postMessage: (m) => void state.posted.push(m),
     terminate: () => void (state.terminated = true),
   };
+  announceReady(worker, readyDelayMs);
   return { worker, state };
 }
 
@@ -164,10 +170,33 @@ function inProcessWorker(): TraceWorker {
     },
     terminate: () => {},
   };
+  announceReady(worker);
   return worker;
 }
 
 describe("runTrace", () => {
+  it("doesn't count a slow worker load against the run timeout", async () => {
+    const { worker } = silentWorker(60);
+    const started = performance.now();
+    const t = await runTrace("while(true){}", "js", { timeoutMs: 30 }, () => worker);
+    expect(t.infinite).toBe(true);
+    expect(performance.now() - started).toBeGreaterThanOrEqual(85);
+  });
+
+  it("reports an error when the worker never loads", async () => {
+    const state = { terminated: false };
+    const worker: TraceWorker = {
+      onmessage: null,
+      onerror: null,
+      postMessage: () => {},
+      terminate: () => void (state.terminated = true),
+    };
+    const t = await runTrace("1;", "js", { loadTimeoutMs: 30 }, () => worker);
+    expect(t.infinite).toBe(false);
+    expect(t.error).toMatch(/took too long to start/);
+    expect(state.terminated).toBe(true);
+  });
+
   it("kills a worker that never answers and reports infinite", async () => {
     const { worker, state } = silentWorker();
     const t = await runTrace("while(true){}", "js", { timeoutMs: 30 }, () => worker);

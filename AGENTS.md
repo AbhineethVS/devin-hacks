@@ -79,6 +79,7 @@ Stay inside the folders your task names. Keep changes elsewhere minimal and call
 - After every card: start the dev server (`npm run dev`, http://localhost:5173) and give the human a short manual test checklist for that card.
 - Devin may merge card branches into `main` itself once build, tests and lint pass. The human reviews by testing the running app.
 - Parallel cards run in git worktrees under `.worktrees/` (git-ignored), one branch per card.
+- Browser checks: `node scripts/browser-check.mjs <url> [selector] [waitForRegex] [timeoutMs] [clickSelector] [listenMs]` (real-time headless Edge/Chrome, prints console errors). Don't trust `--virtual-time-budget` screenshots for anything with Workers or timers; virtual time fires timeouts early.
 
 ## Known gotchas (learned the hard way; see skills/)
 - Tone mono synths **throw** if two notes start at the same instant → `skills/tone-scheduling`.

@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+  <body>
+    <pre id="out">pending</pre>
+    <script type="module">
+      import { runTrace } from "../src/tracer/runTrace.ts";
+      import { PRESETS } from "../src/presets.ts";
+      const rows = [];
+      for (const p of PRESETS) {
+        const t = await runTrace(p.code, p.lang);
+        const maxDepth = Math.max(0, ...t.items.map((i) => i.depth));
+        rows.push(
+          `${p.id}: items=${t.items.length} depth=${maxDepth} infinite=${t.infinite} error=${t.error ?? "-"}`,
+        );
+      }
+      const hang = await runTrace("while (true) {}", "js");
+      rows.push(
+        `while(true){}: items=${hang.items.length} infinite=${hang.infinite} ms=${Math.round(hang.durationMs)}`,
+      );
+      const net = await runTrace("fetch('https://example.com');", "js");
+      rows.push(`fetch: error=${net.error ?? "-"}`);
+      document.getElementById("out").textContent = "DONE\n" + rows.join("\n");
+    </script>
+  </body>
+</html>

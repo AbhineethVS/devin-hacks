@@ -4,7 +4,7 @@
 
 Built solo at **[Devin Hack Kochi](https://luma.com/3v8n74l1)** (24–25 October 2026) with Devin. Track: **Make Room for Play**.
 
-> **Status:** planning complete, implementation starting. Nothing below is built yet. Each feature is marked as it lands and is verified.
+> **Status:** in development. The music engine and Run-mode tracer work on a dev page (`/dev/engine.html`); the main app UI is still a placeholder. Each feature is marked as it lands and is verified.
 
 ## The idea
 
@@ -22,9 +22,9 @@ You can hear the difference between bubble sort and quicksort, and you can hear 
 | Feature | Status |
 | --- | --- |
 | Editor with live token and line highlighting | Planned |
-| Play file and Run modes | Planned |
-| Presets: bubble sort, quicksort, C-style `for`, infinite loop, recursive fibonacci | Planned |
-| Sound packs: Default, Lo-fi, Techno, 8-bit | Planned |
+| Play file and Run modes | Engine and tracer built; playable on `/dev/engine.html`, not yet in the main UI |
+| Presets: bubble sort, quicksort, C-style `for`, infinite loop, recursive fibonacci | Built |
+| Sound packs: Default, Lo-fi, Techno, 8-bit | Default built; others planned |
 | Visualizer that pulses with every step | Planned |
 | Play any file from GitHub, plus a "Famous code" shelf (Apollo 11, Quake III, Doom, Linux) | Planned |
 | AI **"Sounds like…"**: describe a sound, the AI writes a program, the music comes from running it | Planned |
@@ -47,7 +47,11 @@ npm test        # Vitest unit tests
 npm run lint    # ESLint + Prettier check (npm run format to fix)
 ```
 
-Right now the app is a placeholder layout with presets; the engine, tracer and editor are stubs that later task cards replace. The AI features will need `OPENAI_API_KEY`, set in Vercel or a local `.env.local` that is never committed.
+Right now the main app is a placeholder layout with presets. To hear the engine, open http://localhost:5173/dev/engine.html, pick a preset and press **Play file** or **Run** (headphones help).
+
+`node scripts/browser-check.mjs <url> [selector] [waitForRegex] [timeoutMs] [clickSelector] [listenMs]` opens a page in headless Edge/Chrome, optionally clicks a button, and prints the page text plus any console errors.
+
+The AI features will need `OPENAI_API_KEY`, set in Vercel or a local `.env.local` that is never committed.
 
 ## Project docs
 

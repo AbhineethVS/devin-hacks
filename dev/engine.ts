@@ -1,10 +1,12 @@
-// Temporary dev page for Card 1: Play file end to end with the Default pack. Not in the prod build.
+// Temporary dev page for Cards 1–2: Play file and Run with the Default pack. Not in the prod build.
 import { buildFileSong } from "../src/engine/fileSong";
 import { createPlayer, startAudio } from "../src/engine/scheduler";
-import { tokenizeWithInfo } from "../src/engine/tokenize";
+import { tokenize, tokenizeWithInfo } from "../src/engine/tokenize";
 import type { Language } from "../src/engine/types";
 import { defaultPack } from "../src/packs/default";
 import { PRESETS } from "../src/presets";
+import { runTrace } from "../src/tracer/runTrace";
+import { buildRunSong } from "../src/tracer/runSong";
 
 function $<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
@@ -31,9 +33,16 @@ const LANGS: Language[] = [
   "unknown",
 ];
 for (const l of LANGS) lang.add(new Option(l, l));
-const preset = PRESETS.find((p) => p.id === "bubble-sort");
-code.value = preset?.code ?? "";
-lang.value = preset?.lang ?? "js";
+const presetSelect = $<HTMLSelectElement>("preset");
+for (const p of PRESETS) presetSelect.add(new Option(p.name, p.id));
+function loadPreset(id: string): void {
+  const preset = PRESETS.find((p) => p.id === id);
+  code.value = preset?.code ?? "";
+  lang.value = preset?.lang ?? "js";
+}
+loadPreset("bubble-sort");
+presetSelect.value = "bubble-sort";
+presetSelect.addEventListener("change", () => loadPreset(presetSelect.value));
 
 const player = createPlayer();
 let lines: string[] = [];
@@ -41,7 +50,9 @@ let lines: string[] = [];
 player.onStep((step, index) => {
   const text = lines[step.highlight.line - 1]?.trim() ?? "";
   const voices = step.events.map((e) => (e.note ? `${e.voice}:${e.note}` : e.voice)).join(" ");
-  status.textContent = `step ${index}  line ${step.highlight.line}  ${voices || "·"}  | ${text}`;
+  const depth = step.meta?.depth ? `  depth ${step.meta.depth}` : "";
+  const message = step.message ? `  ${step.message}` : "";
+  status.textContent = `step ${index}  line ${step.highlight.line}${depth}  ${voices || "·"}  | ${text}${message}`;
 });
 player.onEnd(() => {
   status.textContent = "Finished";
@@ -59,6 +70,28 @@ $("play").addEventListener("click", async () => {
     if (info.truncatedLines.length) notes.push(`truncated lines: ${info.truncatedLines.join(",")}`);
     if (info.overLineLimit) notes.push("over the 400-line limit");
     status.textContent = notes.join(" · ");
+  } catch (err) {
+    status.textContent = `Error: ${err instanceof Error ? err.message : String(err)}`;
+    console.error(err);
+  }
+});
+$("run").addEventListener("click", async () => {
+  try {
+    await startAudio();
+    player.setBacking(backing.checked);
+    lines = code.value.split(/\r?\n/);
+    const l = lang.value as Language;
+    status.textContent = "Running…";
+    const trace = await runTrace(code.value, l);
+    const song = buildRunSong(
+      trace,
+      tokenize(code.value, l),
+      defaultPack,
+      Number(bpm.value) || 112,
+    );
+    player.play(song, defaultPack);
+    const extra = trace.error ? ` · error: ${trace.error}` : trace.infinite ? " · infinite" : "";
+    status.textContent = `${trace.items.length} trace items in ${Math.round(trace.durationMs)} ms${extra}`;
   } catch (err) {
     status.textContent = `Error: ${err instanceof Error ? err.message : String(err)}`;
     console.error(err);

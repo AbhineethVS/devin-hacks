@@ -8,7 +8,9 @@ Mark human review as "Pending" until you have reviewed (and listened to) the res
 
 | Date and time (IST) | Tool / model | Task card | Session link | PR | What it built (files) | Human review / corrections | Validation and result |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TODO | Devin | Card 0: Scaffold | TODO | TODO | TODO | Pending | TODO |
+| 2026-10-24 21:58 | Devin | Card 0: Scaffold | TODO | [#2](https://github.com/AbhineethVS/devin-hacks/pull/2) | Vite + TS scaffold, contract stubs, presets, placeholder layout, `vercel.json`, `api/health.ts` | Pending | build ✓, 16/16 tests ✓, lint ✓ |
+| 2026-10-24 22:15 | Devin (background sub-session) | Card 1: Engine | TODO | direct merge to `main` | `src/engine/*` (tokenizer, languages, mapping, fileSong, scheduler, audio), `src/packs/default.ts`, `src/packs/master.ts`, `dev/engine.*` | Pending (listen on `/dev/engine.html`) | merged: build ✓, 102/102 tests ✓, lint ✓; Play file runs 8 s in headless Edge with 0 console errors (not heard by ear) |
+| 2026-10-24 22:10 | Devin (background sub-session) | Card 2: Tracer | TODO | direct merge to `main` | `src/tracer/*` (AST instrumentation with acorn + astring, worker sandbox, runTrace, runSong, summary) | Coordinator fix: the run timeout now starts after the worker reports ready | all 5 presets trace correctly in a real browser worker; Run plays to the end with 0 console errors |
 
 ## Other AI tools used during the event
 

@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>Syntune engine (dev)</title>
     <style>
       body {
@@ -38,7 +39,13 @@
   </head>
   <body>
     <h1>Syntune engine dev page</h1>
-    <p>Temporary page for Card 1: listen to Play file with the Default pack.</p>
+    <p>Temporary page for Cards 1–2: listen to Play file and Run with the Default pack.</p>
+    <div class="row">
+      <label
+        >Preset
+        <select id="preset"></select
+      ></label>
+    </div>
     <textarea id="code" spellcheck="false"></textarea>
     <div class="row">
       <label
@@ -46,6 +53,7 @@
         <select id="lang"></select
       ></label>
       <button id="play">Play file</button>
+      <button id="run">Run</button>
       <button id="stop">Stop</button>
       <label>BPM <input id="bpm" type="number" min="70" max="180" value="112" /></label>
       <label><input id="backing" type="checkbox" checked /> Backing beat</label>

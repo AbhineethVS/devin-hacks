@@ -38,3 +38,6 @@ self.onmessage = (event: MessageEvent<TraceRequest>) => {
   const { source, lang, cap } = event.data;
   post(traceSource(source, lang, { cap }));
 };
+
+// Tell runTrace the module has loaded, so its timeout measures execution only, not start-up.
+post({ ready: true });
