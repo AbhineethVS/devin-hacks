@@ -1238,11 +1238,6 @@ Return the complete corrected code in one \`\`\`js block.`;
         applyPanelTheme(next);
         chrome.storage.local.set({ panelTheme: next });
       };
-      $(".card").addEventListener("keydown", (e) => {
-        if (e.key === "Escape") collapse();
-        if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && e.target.classList.contains("prompt")) $(".go").click();
-      });
-
       const setMode = (mode) => {
         genericMode = mode === "rebuild" ? "rebuild" : "reskin";
         root.querySelectorAll(".modebtn").forEach((b) => {
@@ -1312,7 +1307,24 @@ Return the complete corrected code in one \`\`\`js block.`;
       updateToggle();
     }
 
-    function expand() { mount(); root.querySelector(".wrap").classList.add("open"); }
+    function expand() {
+      mount();
+      root.querySelector(".wrap").classList.add("open");
+      setTimeout(() => {
+        if (!root.activeElement && $(".keybox").style.display === "none") $(".prompt").focus({ preventScroll: true });
+      }, 0);
+    }
+    const owns = (event) => Boolean(hostEl) && event.composedPath().includes(hostEl);
+    // Runs before page listeners (see the capture handlers registered at boot), so the panel's own
+    // shortcuts are handled here rather than by listeners inside the shadow root.
+    function onKey(event) {
+      const target = event.composedPath()[0];
+      if (event.key === "Escape") collapse();
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+        if (target?.classList?.contains("prompt")) $(".go").click();
+        if (target?.classList?.contains("remixprompt")) $(".remixgo").click();
+      }
+    }
     function collapse() { mount(); root.querySelector(".wrap").classList.remove("open"); }
     function showKey() {
       mount();
@@ -1394,12 +1406,24 @@ Return the complete corrected code in one \`\`\`js block.`;
       box.classList.add("on");
     }
 
-    return { mount, expand, collapse, showKey, openRemix, status, setBusy, progress, finishProgress, updateToggle, toast, setHidden, showIdeas };
+    return { owns, onKey, mount, expand, collapse, showKey, openRemix, status, setBusy, progress, finishProgress, updateToggle, toast, setHidden, showIdeas };
   })();
 
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === "toggle-panel") panel.expand();
   });
+
+  // Sites with single-key shortcuts (GitHub's "s", "/", "t", "g"…) listen on the document and see panel
+  // keystrokes retargeted to the panel host, not to a text field. These window capture listeners are
+  // registered at document_start, before page scripts, and stop panel key events from reaching the page.
+  // Typing still works: stopping propagation does not cancel the default action of inserting text.
+  for (const type of ["keydown", "keypress", "keyup"]) {
+    window.addEventListener(type, (event) => {
+      if (!panel.owns(event)) return;
+      if (type === "keydown") panel.onKey(event);
+      event.stopImmediatePropagation();
+    }, true);
+  }
 
   // ---------- startup: auto-apply a saved design ----------
   chrome.storage.local.get([rendererKey, SITE_KEY].filter(Boolean)).then((s) => {

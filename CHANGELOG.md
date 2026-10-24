@@ -68,4 +68,8 @@
     - python.org became "Pink Ink Brutalism" in 10 s, then that skin applied to quotes.toscrape.com in 0.1 s.
   - The panel offers a Reskin / Reimagine switch on generic sites.
   - Added `tools/reskin-test.mjs`, which applies a fixed theme without API calls and measures block-level layout shift. Without a font change, nothing moves. With fonts: books.toscrape.com changed 3 of 529 boxes, GitHub moved 25 of 1,500, and Wikipedia grew by 0.6% from re-wrapped lines.
+- Fixed typing in the panel on sites with single-key shortcuts, such as GitHub, where "s", "/", "t" or "g" opened search or navigated.
+  - Window capture listeners registered at document start now stop keyboard events that come from the panel from reaching the page; the panel handles Esc and Ctrl+Enter itself.
+  - Opening the panel focuses the prompt box, or the API key box if no key is saved.
+  - `tools/key-test.mjs` typed "s/tgk? Quiet slate tones…" and an API key on a GitHub repository page: both arrived intact, GitHub did not react, and Esc closed the panel.
 - Added a layout audit: on pages at least 1100 px wide, a tall section whose content spans under 62% of the width, all on one side, is reported as high severity so the review pass repairs it. `tools/inspect-render.mjs` now prints the audit. The check flagged a saved books.toscrape.com renderer whose product grid filled only 56% of a 1440 px page.
