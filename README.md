@@ -1,56 +1,67 @@
-# Devin Hacks
+# Syntune
 
-A repository template for participants at the 10–11 October 2026 hackathon. It contains event rules and documentation scaffolding; build your project from scratch at the event.
+**Your code, played as music.** Hear what your code *looks* like, then hear what it actually *does*.
 
-**[Event and registration on Luma](https://luma.com/z10nz8gp)** · **[Event rules](RULES.md)** · **[Agent instructions](AGENTS.md)**
+Built solo at **[Devin Hacks Kochi](https://luma.com/3v8n74l1)** (24–25 October 2026) with Devin. Track: **Make Room for Play**.
 
-## Event details
+> **Status:** planning complete, implementation starting. Nothing below is built yet. Each feature is marked as it lands and is verified.
 
-| Detail | Information |
+## The idea
+
+Every program has a song. Syntune plays it in two ways:
+
+| Mode | What you hear |
 | --- | --- |
-| Venue | JAIN University, Kochi |
-| Location | [Open the venue map](https://maps.app.goo.gl/Eme7gR7NDXSNRANu5) |
-| Rooms | 2008 and 2009 |
-| Check-in | 10 October 2026, 6:00 PM IST |
-| Kick-off | 10 October 2026, 6:30 PM IST |
-| Wrap-up | 11 October 2026, by 10:00 AM IST |
-| Participation | Solo or a team of up to 4 participants |
-| Theme | Open — build anything you like |
+| **Play file** | The source text as a song. Every token is a 16th-note step: `;` is a snare, `{ }` a kick, keywords ring as bells, variable names carry the melody. The same code always gives the same song. |
+| **Run** | The program executes in a sandbox and performs itself. Loops repeat their riff, values become melody, array writes hit the snare, recursion climbs in pitch, crashes crash, and **an infinite loop drones forever**. |
 
-Keep your approved Luma QR code ready for entry, and bring your laptop and charger. Eligible checked-in participants will receive Codex credits and OpenAI API credits.
+You can hear the difference between bubble sort and quicksort, and you can hear a bug.
 
-## Use this template
+## Planned features
 
-1. Select **Use this template → Create a new repository** on GitHub. Create your own project repository and clone it.
-2. Read [RULES.md](RULES.md) and [AGENTS.md](AGENTS.md) before building. Begin project implementation at the event.
-3. Fill in the project overview below as you build. Use any suitable language or framework, keeping the implementation simple.
-4. Record meaningful changes in [CHANGELOG.md](CHANGELOG.md) and your Devin usage in [AI_USAGE.md](AI_USAGE.md). Commit after completed milestones; aim for a meaningful checkpoint about every 30 minutes.
-5. Complete [SUBMISSION.md](SUBMISSION.md) with your code repository, short project description, and working demo. Follow submission instructions announced by the organizers.
+| Feature | Status |
+| --- | --- |
+| Editor with live token and line highlighting | Planned |
+| Play file and Run modes | Planned |
+| Presets: bubble sort, quicksort, C-style `for`, infinite loop, recursive fibonacci | Planned |
+| Sound packs: Default, Lo-fi, Techno, 8-bit | Planned |
+| Visualizer that pulses with every step | Planned |
+| Play any file from GitHub, plus a "Famous code" shelf (Apollo 11, Quake III, Doom, Linux) | Planned |
+| AI **"Sounds like…"**: describe a sound, the AI writes a program, the music comes from running it | Planned |
+| AI **"Why does it sound wrong?"**: explains the music from the code and its trace | Planned |
+| Share links and audio export | Planned |
 
-This template has no application code or required technology stack. The documentation and commit cadence are repository workflow guidance; the event participation rules are in [RULES.md](RULES.md).
+## Tech stack
 
-## Project overview — complete during the event
+Vite + TypeScript (strict), vanilla DOM, [CodeMirror 6](https://codemirror.net/), [Tone.js](https://tonejs.github.io/), Canvas 2D, [Vitest](https://vitest.dev/), [lz-string](https://github.com/pieroxy/lz-string), hosted on [Vercel](https://vercel.com/). The AI features call the OpenAI API from Vercel serverless functions; the key never reaches the browser. User and AI code runs only in a sandboxed Web Worker in the browser, with a step cap and a timeout.
 
-- **Project name:** TODO
-- **Short description:** TODO — what it does, who it helps, and why it matters.
-- **Team:** TODO — participant names and GitHub handles; maximum 4 members.
-- **Working demo:** TODO — link or local demo instructions.
-- **Technology stack:** TODO
+## Run the project
 
-### Run the project
+Setup commands are added once the scaffold lands. Planned:
 
-Replace these placeholders with commands that actually work for your project:
+```bash
+npm install
+npm run dev     # start the app
+npm run build   # type-check and build
+npm test        # unit tests
+```
 
-1. Prerequisites and versions: TODO
-2. Dependency installation: TODO
-3. Environment setup: TODO — list required variable names and provide a sanitized `.env.example` if needed.
-4. Start the project: TODO
-5. Run checks or tests: TODO
+The AI features need `OPENAI_API_KEY`, set in Vercel or a local `.env.local` that is never committed.
 
-### Current status
+## Project docs
 
-- Working features: TODO
-- Known limitations: TODO
-- Libraries, APIs, and public datasets used: TODO — include source links and applicable attribution.
+- [AGENTS.md](AGENTS.md): rules for every agent working in this repo
+- [CONTRACTS.md](CONTRACTS.md): interfaces and data shapes
+- [docs/PRODUCT.md](docs/PRODUCT.md): product brief and scope
+- [docs/SOUND_DESIGN.md](docs/SOUND_DESIGN.md): the token-to-sound mapping
+- [docs/TASK_CARDS.md](docs/TASK_CARDS.md): the build plan, one Devin session per card
+- [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md): the 2-minute demo
+- [RULES.md](RULES.md): event rules
 
-See [AI_USAGE.md](AI_USAGE.md) for AI assistance and [CHANGELOG.md](CHANGELOG.md) for the development record.
+## Prior art
+
+Program auralization research (for example CAITLIN, 1996) showed that people can hear bugs, but it never became something people want to use. Live-coding tools like Sonic Pi and Strudel are music *languages*: you write code meant as music. Syntune plays **ordinary programs**.
+
+## How I built this with Devin
+
+Every Devin session is recorded in [AI_USAGE.md](AI_USAGE.md), and every meaningful change in [CHANGELOG.md](CHANGELOG.md).

@@ -1,10 +1,10 @@
 # Change log
 
-Record each meaningful project change during the event, newest first. Update this file in the same commit as the change. Use a real timestamp with timezone, for example `YYYY-MM-DDTHH:MM:SS+05:30`.
+Record each meaningful project change during the event, newest first. Update this file in the same commit as the change. Use a real timestamp with timezone, for example `2026-10-24T21:30:00+05:30`.
 
 ## Event build log
 
-No project implementation has been recorded yet. Replace this sentence with entries as you build:
+No project implementation has been recorded yet. Add entries as you build:
 
 ```text
 ## <actual timestamp> — <short change title>
@@ -12,19 +12,28 @@ No project implementation has been recorded yet. Replace this sentence with entr
 - Changed: <feature or files changed>
 - Why: <reason for the change>
 - Validation: <commands or manual checks actually run, with results>
-- Limitations: <known issues or "None identified in these checks">
+- Limitations: <known issues, or "None identified in these checks">
 ```
+
+## 2026-10-24T21:42:00+05:30 — Fresh Syntune README
+
+- Changed: replaced `README.md` with a new Syntune README (idea, planned features with status, stack, planned commands, doc links, prior art).
+- Why: the README on GitHub was still the previous DevDay template.
+- Validation: documentation-only. Checked that the links point to files in the repo.
+- Limitations: setup commands are planned, not yet working; no features are built.
 
 ## 2026-10-24T21:25:16+05:30 — Rename event to Devin Hacks and AI tool to Devin
 
 - Changed: Replaced the "DevDay Exchange Community Hackathon: Kochi" title with "Devin Hacks", and the Codex workflow references with Devin, in `README.md`, `RULES.md`, `AGENTS.md`, `AI_USAGE.md`, `SUBMISSION.md`, and `.github/pull_request_template.md`.
 - Why: The team is entering Devin Hacks and will use Devin as its AI coding tool.
 - Validation: Searched the repository for remaining "Codex" and "DevDay" mentions and reviewed the diff.
-- Limitations: The venue, dates, Luma link, and credits lines (Codex/OpenAI credits) still describe the original event, and need confirming against the Devin Hacks announcement. The historical template-preparation note in `AI_USAGE.md` still credits Codex, which is accurate.
+- Limitations: The venue, dates, Luma link, and credits lines (Codex/OpenAI credits) still describe the original event, and need confirming against the Devin Hacks announcement. The historical template-preparation note in `AI_USAGE.md` still credits Codex, which is accurate. (Superseded: the Syntune planning-docs commit, rebased on top of this change, replaced these files wholesale.)
 
-## Template setup — 10 October 2026
+## 2026-10-24T21:15:00+05:30 — Adapt template for Devin Hacks Kochi + Syntune planning docs
 
-- Changed: Added the event README, rules, agent guide, change log, AI usage record, submission checklist, Git ignore rules, and pull request checklist.
-- Why: Give participants a consistent starting point for event rules, basic coding patterns, documented changes, and regular commits.
-- Validation: Checked local Markdown links, event detail consistency, required documents, and diff whitespace before publishing.
-- Limitations: Documentation scaffolding only; no participant project, application, or working demo is included. GitHub publication and template status are verified separately after creation.
+- Changed:
+  - Updated `RULES.md`, `AGENTS.md`, `README.md`, `SUBMISSION.md`, `AI_USAGE.md`, `.gitignore` and the pull request template from the previous DevDay (Codex) template to Devin Hacks Kochi (solo, Devin, four tracks, 24–25 October).
+  - Added `CONTRACTS.md`, `docs/` (product brief, sound design, demo script, task cards), `skills/` and `agents/`.
+- Why: give the Devin sessions one consistent set of rules, interfaces and task specs before implementation starts.
+- Validation: documentation-only. Checked that the files and cross-links exist. Unconfirmed event details are marked TODO.
+- Limitations: no application code yet. Venue, credits, submission method and evaluation criteria still need to be confirmed with the organizers.
