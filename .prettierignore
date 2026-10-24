@@ -1,6 +1,7 @@
 dist/
 node_modules/
 .vercel/
+.worktrees/
 package-lock.json
 # Planning docs are hand-written; don't let the formatter churn them.
 *.md
