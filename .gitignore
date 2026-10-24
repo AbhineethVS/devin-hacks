@@ -20,6 +20,8 @@ test-results/
 Thumbs.db
 *.log
 
-# Audio/video exports made while testing.
-*.webm
-*.wav
+# Local API-key module used by the prototype tools.
+tools/env.mjs
+
+# Generated browser profiles, screenshots, and renderer output.
+out/

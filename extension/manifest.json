@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Remodel (prototype)",
+  "version": "0.1.0",
+  "description": "Rebuild any page from a prompt. The site keeps working.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://api.openai.com/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "Remodel" },
+  "content_scripts": [
+    {
+      "matches": ["https://*.wikipedia.org/*", "https://news.ycombinator.com/*"],
+      "js": ["extractors.js", "cursors.js", "content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "sandbox": { "pages": ["sandbox.html"] },
+  "web_accessible_resources": [
+    { "resources": ["sandbox.html", "sandbox.js"], "matches": ["https://*.wikipedia.org/*", "https://news.ycombinator.com/*"] }
+  ]
+}

@@ -1,35 +1,23 @@
 ## What changed and why
 
-<!-- one or two sentences -->
-
-## Task card
-
-<!-- e.g. Card 3: Editor + transport (docs/TASK_CARDS.md) -->
+<!-- One or two sentences. -->
 
 ## How to try it
 
-<!-- steps; which preset to use -->
+<!-- Exact steps. -->
 
 ## Screenshot / GIF
 
-<!-- required for any UI or audio-visible change -->
+<!-- Required for visible changes. -->
 
 ## Validation
 
-- [ ] `npm run build` passes
-- [ ] `npm test` passes
-- [ ] No console errors while playing for 60 s
-- Other checks actually run, and anything left unverified:
+- [ ] Relevant automated checks pass.
+- [ ] Manual demo path was tested.
+- [ ] No credentials or private data were added.
 
 ## Contract change
 
-<!-- none, or what changed in CONTRACTS.md and why -->
-
-## Documentation and handoff
-
-- [ ] `CHANGELOG.md` records this change with its actual timestamp and validation.
-- [ ] `README.md` reflects any setup or behaviour changes, if applicable.
-- [ ] Suggested `AI_USAGE.md` row for AI assistance, if keeping this project record (pending human review):
-- [ ] Simple code patterns; no credentials or private data.
+<!-- None, or describe the change and update CONTRACTS.md. -->
 
 ## Known limitations
