@@ -1,8 +1,8 @@
 # AI usage record
 
-Build with Devin during the hackathon and briefly record its actual contribution here: one row per Devin session or meaningful task. Disclose **every** AI tool used, not only Devin. Keep summaries concise; omit secrets, private data and full transcripts.
+Devin Hack Kochi has no major AI usage constraints. This project may keep an accurate record of assistance from Devin or any other AI tool; the record does not impose an event eligibility requirement. Keep summaries concise; omit secrets, private data and full transcripts.
 
-## Event build log (Devin sessions)
+## Event build log (AI assistance)
 
 Mark human review as "Pending" until you have reviewed (and listened to) the result.
 
@@ -26,3 +26,13 @@ On 24 October 2026 at the event, **Claude Code** (Anthropic) was used to:
 - draft the planning docs: `AGENTS.md`, `RULES.md`, `README.md`, `SUBMISSION.md`, `CHANGELOG.md`, `AI_USAGE.md`, `CONTRACTS.md`, `docs/`, `skills/`, `agents/`, and the pull request template
 
 No application code from that session is in this repository. TODO: the participant should review this note and keep it accurate.
+
+## Event documentation correction — 2026-10-24T21:53:05+05:30
+
+- Tool: Codex.
+- Task: correct the organizer-shared template to Devin Hack Kochi and clarify
+  that the event has no major AI usage constraints.
+- Affected files: `.github/pull_request_template.md`, `AGENTS.md`, `AI_USAGE.md`, `CHANGELOG.md`, `README.md`, `RULES.md`, `SUBMISSION.md`.
+- Human review: pending maintainer review of this pull request.
+- Validation: documentation diff, whitespace, and local Markdown link checks;
+  no application code changed and no runtime checks were needed.

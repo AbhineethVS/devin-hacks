@@ -2,7 +2,7 @@
 
 **Your code, played as music.** Hear what your code *looks* like, then hear what it actually *does*.
 
-Built solo at **[Devin Hacks Kochi](https://luma.com/3v8n74l1)** (24–25 October 2026) with Devin. Track: **Make Room for Play**.
+Built solo at **[Devin Hack Kochi](https://luma.com/3v8n74l1)** (24–25 October 2026) with Devin. Track: **Make Room for Play**.
 
 > **Status:** planning complete, implementation starting. Nothing below is built yet. Each feature is marked as it lands and is verified.
 
@@ -65,3 +65,7 @@ Program auralization research (for example CAITLIN, 1996) showed that people can
 ## How I built this with Devin
 
 Every Devin session is recorded in [AI_USAGE.md](AI_USAGE.md), and every meaningful change in [CHANGELOG.md](CHANGELOG.md).
+
+## Event clarification
+
+Devin Hack Kochi has no major AI usage constraints. Participants may use Devin and other AI tools, models, and providers; this template does not require Codex or restrict AI usage to OpenAI. AI usage notes are project documentation, not an additional event eligibility requirement.
