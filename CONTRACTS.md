@@ -2,6 +2,12 @@
 
 Single source of truth. All modules communicate only through these shapes.
 
+**Conventions (added in Card 0):**
+- All the types below are declared once in `src/engine/types.ts`. The files named in each section export the functions and re-export the types they use.
+- Line numbers (`Token.line`, `Step.highlight.line`, `TraceItem.line`) are **1-based**, matching CodeMirror. `Token.col` is 0-based.
+- Factories: `createPlayer(): Player` (`scheduler.ts`), `createEditor(parent, initialCode?): EditorApi` (`ui/editor.ts`).
+- Stubs that aren't built yet throw `Not implemented: <name> (Card N)`. Search for `STUB (Card` to find them.
+
 ## 1. Tokens (`src/engine/tokenize.ts`)
 ```ts
 type TokenKind = "kw" | "type" | "id" | "num" | "str" | "op" | "punct" | "comment";
