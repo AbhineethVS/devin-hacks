@@ -15,6 +15,35 @@ No project implementation has been recorded yet. Add entries as you build:
 - Limitations: <known issues, or "None identified in these checks">
 ```
 
+## 2026-10-24T22:49:00+05:30 — Cards 3–5: editor, visualizer, and the main app plays
+
+- Changed:
+  - `src/ui/editor.ts`: CodeMirror 6 editor (line numbers, undo history, JS/TS/C-family/Python highlighting, dark theme). Playback highlight is a blue line wash plus a pink pill on the exact token being played, using our tokenizer's columns, with auto-scroll.
+  - `src/viz/visualizer.ts`: Canvas 2D visualizer:
+    - fading trails and a waveform ribbon from the master analyser
+    - per-voice bursts: kick rings with shake, snare flash and sparks, hat and rim sparks, lead/bell/bass notes placed by pitch, pad glow, crash flash
+    - recursion-depth rings, and a red wobbling drone mode
+    - devicePixelRatio aware; pauses when the tab is hidden
+    - new `noteToMidi` helper with tests
+  - `src/main.ts`, `index.html`, `src/styles.css`:
+    - Play file / Run / Stop are wired to the engine and tracer; the editor highlight and visualizer follow `Player.onStep`.
+    - New language picker. Run is disabled with an explanation for languages other than JS and C-like.
+    - Active-button states. The whole UI turns red for the infinite-loop drone.
+    - Keyboard: Space play/stop, F play file, R run, Esc stop.
+    - Tone warms up when you hover over a play button.
+  - New dependencies (pinned): `@codemirror/commands` 6.11.1 (undo/redo and default keys) and `@lezer/highlight` 1.2.5 (syntax colour tags; already installed transitively).
+- Why: Cards 3, 4 and 5 make the main app play end to end.
+- Validation:
+  - `npm run build`, `npm test` (103/103) and `npm run lint` passed.
+  - Headless Chrome on the main page, 0 console errors throughout:
+    - Play file on bubble sort: 132 steps, line and token highlight present
+    - Run: 112 steps
+    - infinite-loop preset: drone message and red mode
+    - Esc stops and clears the drone; Space plays and stops
+    - Python disables Run
+  - Screenshots checked at 1440×900.
+- Limitations: not checked by ear in this session. Vercel deploy (part of Card 5) needs the owner's Vercel account. Other packs, GitHub loading, AI, share and export are still to come.
+
 ## 2026-10-24T22:43:00+05:30 — Default pack now sounds exactly like the original sound test
 
 - Changed:

@@ -4,7 +4,7 @@
 
 Built solo at **[Devin Hack Kochi](https://luma.com/3v8n74l1)** (24–25 October 2026) with Devin. Track: **Make Room for Play**.
 
-> **Status:** in development. The music engine and Run-mode tracer work on a dev page (`/dev/engine.html`); the main app UI is still a placeholder. Each feature is marked as it lands and is verified.
+> **Status:** in development. The main app plays: a CodeMirror editor with live token and line highlighting, Play file and Run, and a visualizer. Each feature is marked as it lands and is verified.
 
 ## The idea
 
@@ -21,11 +21,11 @@ You can hear the difference between bubble sort and quicksort, and you can hear 
 
 | Feature | Status |
 | --- | --- |
-| Editor with live token and line highlighting | Planned |
-| Play file and Run modes | Engine and tracer built; playable on `/dev/engine.html`, not yet in the main UI |
+| Editor with live token and line highlighting | Built (CodeMirror 6) |
+| Play file and Run modes | Built, in the main app |
 | Presets: bubble sort, quicksort, C-style `for`, infinite loop, recursive fibonacci | Built |
 | Sound packs: Default, Lo-fi, Techno, 8-bit | Default built; others planned |
-| Visualizer that pulses with every step | Planned |
+| Visualizer that pulses with every step | Built (waveform, per-sound bursts, depth rings, red drone mode) |
 | Play any file from GitHub, plus a "Famous code" shelf (Apollo 11, Quake III, Doom, Linux) | Planned |
 | AI **"Sounds like…"**: describe a sound, the AI writes a program, the music comes from running it | Planned |
 | AI **"Why does it sound wrong?"**: explains the music from the code and its trace | Planned |
@@ -47,7 +47,7 @@ npm test        # Vitest unit tests
 npm run lint    # ESLint + Prettier check (npm run format to fix)
 ```
 
-Right now the main app is a placeholder layout with presets. To hear the engine, open http://localhost:5173/dev/engine.html, pick a preset and press **Play file** or **Run** (headphones help).
+Open http://localhost:5173, pick a preset and press **Play file** (F) or **Run** (R). Space plays and stops; Esc stops. Headphones help. `/dev/engine.html` is the bare engine test page.
 
 `node scripts/browser-check.mjs <url> [selector] [waitForRegex] [timeoutMs] [clickSelector] [listenMs]` opens a page in headless Edge/Chrome, optionally clicks a button, and prints the page text plus any console errors.
 
