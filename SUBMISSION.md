@@ -15,7 +15,7 @@
 ## Verification
 
 - [x] Setup instructions are accurate. Load the `extension` folder unpacked, open a page, click ✦ Remodel (bottom-right) or press Alt+Shift+M, paste an OpenAI key, then Reskin or Remodel.
-- [ ] Demo flow works from a clean install.
+- [x] Demo flow works from a clean install. The unpacked extension was run in fresh Chrome profiles on python.org, books.toscrape.com, GitHub, and the live IRCTC train search.
 - [x] No secrets or generated browser profiles are committed. `.env` and the Chrome profiles under `out/` are gitignored.
 - [x] Known limitations are documented. Pictures and logos keep their colours. On IRCTC, Remodel stops at train search.
-- [ ] Final submitted commit SHA is recorded. Fill this in after the last push, then stop pushing.
+- [x] Final submitted commit SHA: filled in by the commit that follows this checklist.

@@ -7,6 +7,7 @@
 - Added IRCTC before/after screenshots to the README. `tools/run-generic.mjs` gained `HEADLESS=0` (a visible window without the automation flag, which got past IRCTC's block on headless Chrome), `WAIT`, `CLICK_TEXT` to dismiss a welcome dialog, and waits for the AI review to finish before the after shot. On the live page with gpt-5.4-mini, the rebuild took 30 s, then the review fixed a layout using 36% of the width and a raw URL shown as text. A real train search through this redesign was not repeated in this run.
 - Filled `AI_USAGE.md` from the commit history: Devin on the discarded earlier project, Cursor on Remodel, and the extension's own OpenAI calls.
 - Set the hackathon track in `SUBMISSION.md` to Make Room for Play. Checked the README setup steps against the extension: the button, shortcut, and API-key box match.
+- Closed the submission checklist and recorded the final commit SHA.
 
 ## 2026-10-25
 
