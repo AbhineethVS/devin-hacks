@@ -3,7 +3,7 @@
 ## 2026-10-25 (docs)
 
 - Added the four demo videos to the README and `SUBMISSION.md`: python.org reskin, GitHub neon reskin, the Apple Wikipedia rebuild, and a cyberpunk redesign.
-- Showed the before/after screenshots at full width, so the pages are readable. Demo videos are plain links, grouped together.
+- Showed the before/after screenshots at full width, so the pages are readable. Demo videos are plain links, grouped together, each with a one-line note on what the clip shows.
 
 ## 2026-10-25
 

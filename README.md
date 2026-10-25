@@ -6,10 +6,10 @@ Remodel is a Chrome extension. Open a website, type the style you want (for exam
 
 ## Demo videos
 
-- [python.org, pink neo-brutalist reskin](https://youtu.be/dNEG0L8O_Oc)
-- [GitHub, neon reskin](https://youtu.be/Xa5lt1BeMjs)
-- [Wikipedia's Apple article, rebuilt](https://youtu.be/PlnK9Iw7WgI)
-- [Cyberpunk redesign](https://youtu.be/-1QaEpzxPYg)
+- [python.org, pink neo-brutalist reskin](https://youtu.be/dNEG0L8O_Oc). Same page, repainted in loud pink with thick borders and heavy type.
+- [GitHub, neon reskin](https://youtu.be/Xa5lt1BeMjs). GitHub stays put. The colours and type turn neon.
+- [Wikipedia's Apple article, rebuilt](https://youtu.be/PlnK9Iw7WgI). The article gets a new layout, in a clean Apple-keynote style.
+- [Cyberpunk redesign](https://youtu.be/-1QaEpzxPYg). A page redesigned in a dark, neon Cyberpunk 2077 look.
 
 ## Before and after
 
