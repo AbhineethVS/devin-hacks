@@ -6,30 +6,53 @@ Remodel is a Chrome extension. Open a website, type the style you want (for exam
 
 ## Demo videos
 
-| | |
-|---|---|
-| [![python.org reskin](https://img.youtube.com/vi/dNEG0L8O_Oc/hqdefault.jpg)](https://youtu.be/dNEG0L8O_Oc) [python.org, pink neo-brutalist reskin](https://youtu.be/dNEG0L8O_Oc) | [![GitHub neon reskin](https://img.youtube.com/vi/Xa5lt1BeMjs/hqdefault.jpg)](https://youtu.be/Xa5lt1BeMjs) [GitHub, neon reskin](https://youtu.be/Xa5lt1BeMjs) |
-| [![Apple Wikipedia rebuild](https://img.youtube.com/vi/PlnK9Iw7WgI/hqdefault.jpg)](https://youtu.be/PlnK9Iw7WgI) [Wikipedia's Apple article, rebuilt](https://youtu.be/PlnK9Iw7WgI) | [![Cyberpunk redesign](https://img.youtube.com/vi/-1QaEpzxPYg/hqdefault.jpg)](https://youtu.be/-1QaEpzxPYg) [Cyberpunk redesign](https://youtu.be/-1QaEpzxPYg) |
+**[python.org, pink neo-brutalist reskin](https://youtu.be/dNEG0L8O_Oc)**
+
+<a href="https://youtu.be/dNEG0L8O_Oc"><img src="https://i.ytimg.com/vi/dNEG0L8O_Oc/maxresdefault.jpg" alt="python.org, pink neo-brutalist reskin" width="100%"></a>
+
+**[GitHub, neon reskin](https://youtu.be/Xa5lt1BeMjs)**
+
+<a href="https://youtu.be/Xa5lt1BeMjs"><img src="https://i.ytimg.com/vi/Xa5lt1BeMjs/hqdefault.jpg" alt="GitHub, neon reskin" width="100%"></a>
+
+**[Wikipedia's Apple article, rebuilt](https://youtu.be/PlnK9Iw7WgI)**
+
+<a href="https://youtu.be/PlnK9Iw7WgI"><img src="https://i.ytimg.com/vi/PlnK9Iw7WgI/hqdefault.jpg" alt="Wikipedia's Apple article, rebuilt" width="100%"></a>
+
+**[Cyberpunk redesign](https://youtu.be/-1QaEpzxPYg)**
+
+<a href="https://youtu.be/-1QaEpzxPYg"><img src="https://i.ytimg.com/vi/-1QaEpzxPYg/hqdefault.jpg" alt="Cyberpunk redesign" width="100%"></a>
 
 ## Before and after
 
 **GitHub, "cyberpunk / futuristic"**: the layout stays the same, and the colours, fonts and shapes change.
 
-| Before | After |
-|---|---|
-| ![GitHub before](docs/media/github-before.png) | ![GitHub after, cyberpunk](docs/media/github-after-cyberpunk.png) |
+Before
+
+<img src="docs/media/github-before.png" alt="GitHub before" width="100%">
+
+After
+
+<img src="docs/media/github-after-cyberpunk.png" alt="GitHub after, cyberpunk" width="100%">
 
 **Wikipedia's Apple Inc. article, rebuilt**: the whole page gets a new layout, in a clean Apple-keynote style.
 
-| Before | After |
-|---|---|
-| ![Wikipedia before](docs/media/apple-wikipedia-before.png) | ![Wikipedia after](docs/media/apple-wikipedia-after.png) |
+Before
+
+<img src="docs/media/apple-wikipedia-before.png" alt="Wikipedia before" width="100%">
+
+After
+
+<img src="docs/media/apple-wikipedia-after.png" alt="Wikipedia after" width="100%">
 
 **Hacker News, as a retro desktop**: the same live stories, inside a 90s-style computer window.
 
-| Before | After |
-|---|---|
-| ![Hacker News before](docs/media/hackernews-before.png) | ![Hacker News after, retro desktop](docs/media/hackernews-after-windows95.png) |
+Before
+
+<img src="docs/media/hackernews-before.png" alt="Hacker News before" width="100%">
+
+After
+
+<img src="docs/media/hackernews-after-windows95.png" alt="Hacker News after, retro desktop" width="100%">
 
 ## Two ways to remodel
 

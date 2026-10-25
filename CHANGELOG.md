@@ -2,7 +2,8 @@
 
 ## 2026-10-25 (docs)
 
-- Added the four demo videos to the README and `SUBMISSION.md`: python.org reskin, GitHub neon reskin, the Apple Wikipedia rebuild, and a cyberpunk redesign. Replaced the Hacker News after image with the retro desktop screenshot.
+- Added the four demo videos to the README and `SUBMISSION.md`: python.org reskin, GitHub neon reskin, the Apple Wikipedia rebuild, and a cyberpunk redesign.
+- Showed the demo videos and before/after screenshots at full width, so the pages are readable.
 
 ## 2026-10-25
 
