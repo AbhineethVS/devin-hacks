@@ -6,21 +6,10 @@ Remodel is a Chrome extension. Open a website, type the style you want (for exam
 
 ## Demo videos
 
-**[python.org, pink neo-brutalist reskin](https://youtu.be/dNEG0L8O_Oc)**
-
-<a href="https://youtu.be/dNEG0L8O_Oc"><img src="https://i.ytimg.com/vi/dNEG0L8O_Oc/maxresdefault.jpg" alt="python.org, pink neo-brutalist reskin" width="100%"></a>
-
-**[GitHub, neon reskin](https://youtu.be/Xa5lt1BeMjs)**
-
-<a href="https://youtu.be/Xa5lt1BeMjs"><img src="https://i.ytimg.com/vi/Xa5lt1BeMjs/hqdefault.jpg" alt="GitHub, neon reskin" width="100%"></a>
-
-**[Wikipedia's Apple article, rebuilt](https://youtu.be/PlnK9Iw7WgI)**
-
-<a href="https://youtu.be/PlnK9Iw7WgI"><img src="https://i.ytimg.com/vi/PlnK9Iw7WgI/hqdefault.jpg" alt="Wikipedia's Apple article, rebuilt" width="100%"></a>
-
-**[Cyberpunk redesign](https://youtu.be/-1QaEpzxPYg)**
-
-<a href="https://youtu.be/-1QaEpzxPYg"><img src="https://i.ytimg.com/vi/-1QaEpzxPYg/hqdefault.jpg" alt="Cyberpunk redesign" width="100%"></a>
+- [python.org, pink neo-brutalist reskin](https://youtu.be/dNEG0L8O_Oc)
+- [GitHub, neon reskin](https://youtu.be/Xa5lt1BeMjs)
+- [Wikipedia's Apple article, rebuilt](https://youtu.be/PlnK9Iw7WgI)
+- [Cyberpunk redesign](https://youtu.be/-1QaEpzxPYg)
 
 ## Before and after
 
