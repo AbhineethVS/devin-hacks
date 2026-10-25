@@ -4,7 +4,7 @@
 
 - **Name:** Remodel
 - **One-line description:** Give any website a new look with one sentence.
-- **Track:** TODO
+- **Track:** Make Room for Play. Remodel is something you open on a page to experience a new look, not a task it finishes for you.
 - **Repository URL:** https://github.com/AbhineethVS/devin-hacks
 - **Demo videos:**
   - [python.org, pink neo-brutalist reskin](https://youtu.be/dNEG0L8O_Oc). Same page, repainted in loud pink with thick borders and heavy type.
@@ -16,6 +16,6 @@
 
 - [ ] Setup instructions are accurate.
 - [ ] Demo flow works from a clean install.
-- [ ] No secrets or generated browser profiles are committed.
-- [ ] Known limitations are documented.
-- [ ] Final submitted commit SHA is recorded.
+- [x] No secrets or generated browser profiles are committed. `.env` and the Chrome profiles under `out/` are gitignored.
+- [x] Known limitations are documented. Pictures and logos keep their colours. On IRCTC, Remodel stops at train search.
+- [ ] Final submitted commit SHA is recorded. Fill this in after the last push, then stop pushing.
