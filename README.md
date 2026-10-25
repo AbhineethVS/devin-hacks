@@ -18,11 +18,11 @@ Remodel is a Chrome extension. Open a website, type the style you want (for exam
 |---|---|
 | ![Wikipedia before](docs/media/apple-wikipedia-before.png) | ![Wikipedia after](docs/media/apple-wikipedia-after.png) |
 
-**Hacker News, as a newspaper front page**: the same stories, laid out like a printed paper.
+**Hacker News, as a retro desktop**: the same live stories, inside a 90s-style computer window.
 
 | Before | After |
 |---|---|
-| ![Hacker News before](docs/media/hackernews-before.png) | ![Hacker News after, newspaper](docs/media/hackernews-after-newspaper.png) |
+| ![Hacker News before](docs/media/hackernews-before.png) | ![Hacker News after, retro desktop](docs/media/hackernews-after-windows95.png) |
 
 ## Two ways to remodel
 
