@@ -43,7 +43,7 @@ After
 
 <img src="docs/media/hackernews-after-windows95.png" alt="Hacker News after, retro desktop" width="100%">
 
-**IRCTC train search, as a calm Japanese rail planner**: the same booking form in a quiet layout. It still fills in IRCTC's real form, so searching shows real trains. The AI checked its own screenshot and fixed two mistakes before this shot.
+**IRCTC train search, as a calm Japanese rail planner**: the same booking form beside a station departures board listing every travel class. It still fills in IRCTC's real form, so searching shows real trains. The AI checked its own screenshot and fixed a mistake before this shot.
 
 Before
 
