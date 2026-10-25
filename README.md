@@ -4,6 +4,13 @@
 
 Remodel is a Chrome extension. Open a website, type the style you want (for example "cyberpunk" or "neo-brutalist magazine"), and Remodel redesigns the page for you. The site keeps working: links, search, logins and forms still do what they did before.
 
+## Demo videos
+
+| | |
+|---|---|
+| [![python.org reskin](https://img.youtube.com/vi/dNEG0L8O_Oc/hqdefault.jpg)](https://youtu.be/dNEG0L8O_Oc) [python.org, pink neo-brutalist reskin](https://youtu.be/dNEG0L8O_Oc) | [![GitHub neon reskin](https://img.youtube.com/vi/Xa5lt1BeMjs/hqdefault.jpg)](https://youtu.be/Xa5lt1BeMjs) [GitHub, neon reskin](https://youtu.be/Xa5lt1BeMjs) |
+| [![Apple Wikipedia rebuild](https://img.youtube.com/vi/PlnK9Iw7WgI/hqdefault.jpg)](https://youtu.be/PlnK9Iw7WgI) [Wikipedia's Apple article, rebuilt](https://youtu.be/PlnK9Iw7WgI) | [![Cyberpunk redesign](https://img.youtube.com/vi/-1QaEpzxPYg/hqdefault.jpg)](https://youtu.be/-1QaEpzxPYg) [Cyberpunk redesign](https://youtu.be/-1QaEpzxPYg) |
+
 ## Before and after
 
 **GitHub, "cyberpunk / futuristic"**: the layout stays the same, and the colours, fonts and shapes change.

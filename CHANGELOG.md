@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-25 (docs)
+
+- Added the four demo videos to the README and `SUBMISSION.md`: python.org reskin, GitHub neon reskin, the Apple Wikipedia rebuild, and a cyberpunk redesign. Replaced the Hacker News after image with the retro desktop screenshot.
+
 ## 2026-10-25
 
 - Reset the previous implementation and imported the Remodel browser-extension prototype as the new project baseline.
