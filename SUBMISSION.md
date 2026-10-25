@@ -18,4 +18,4 @@
 - [x] Demo flow works from a clean install. The unpacked extension was run in fresh Chrome profiles on python.org, books.toscrape.com, GitHub, and the live IRCTC train search.
 - [x] No secrets or generated browser profiles are committed. `.env` and the Chrome profiles under `out/` are gitignored.
 - [x] Known limitations are documented. Pictures and logos keep their colours. On IRCTC, Remodel stops at train search.
-- [x] Final submitted commit SHA: filled in by the commit that follows this checklist.
+- [x] Final submitted commit SHA: `7eba35e308282353ab98ec9c497e7c6a4ab6974a`
