@@ -15,9 +15,12 @@ fs.mkdirSync(outDir, { recursive: true });
 const [model, prompt, ...urls] = process.argv.slice(2);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// HEADLESS=0 opens a visible window for sites such as IRCTC that block headless Chrome.
+const headful = process.env.HEADLESS === "0";
 const browser = await puppeteer.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
-  headless: true,
+  headless: !headful,
+  ...(headful && { ignoreDefaultArgs: ["--enable-automation"], args: ["--disable-blink-features=AutomationControlled", "--window-size=1440,1000"] }),
   pipe: true,
   enableExtensions: [extPath],
   defaultViewport: { width: 1440, height: 900 },
@@ -40,7 +43,12 @@ const status = () => panelEval((root) => root.querySelector(".status").textConte
 for (const [i, url] of urls.entries()) {
   const tag = `${i}_${new URL(url).hostname.replace(/^www\./, "")}`;
   await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 }).catch(() => {});
-  await sleep(1500);
+  await sleep(Number(process.env.WAIT || 1500));
+  // CLICK_TEXT dismisses a welcome dialog (for example IRCTC's "English" language choice) before the first shot.
+  if (process.env.CLICK_TEXT) {
+    await page.evaluate((t) => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === t)?.click(), process.env.CLICK_TEXT);
+    await sleep(1500);
+  }
   await page.screenshot({ path: `${outDir}/${tag}_original.png` });
   // Simulate the toolbar button.
   await worker.evaluate(async () => {
@@ -61,6 +69,14 @@ for (const [i, url] of urls.entries()) {
     await sleep(2000);
   }
   console.log(`[${tag}] ${((Date.now() - t0) / 1000).toFixed(1)}s → ${s.slice(0, 260)}`);
+  if (review && /done in/i.test(s)) {
+    for (let k = 0; k < 90; k++) {
+      s = await status();
+      if (/AI review (passed|fixed|skipped)|Polish attempt failed/i.test(s)) break;
+      await sleep(2000);
+    }
+    console.log(`  review → ${s.slice(0, 300)}`);
+  }
   await sleep(2500);
   await page.screenshot({ path: `${outDir}/${tag}_remodel.png` });
   const frame = page.frames().find((f) => f.url().includes("sandbox.html"));

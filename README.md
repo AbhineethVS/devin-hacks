@@ -43,6 +43,16 @@ After
 
 <img src="docs/media/hackernews-after-windows95.png" alt="Hacker News after, retro desktop" width="100%">
 
+**IRCTC train search, as a calm Japanese rail planner**: the same booking form in a quiet layout. It still fills in IRCTC's real form, so searching shows real trains. The AI checked its own screenshot and fixed two mistakes before this shot.
+
+Before
+
+<img src="docs/media/irctc-before.png" alt="IRCTC before" width="100%">
+
+After
+
+<img src="docs/media/irctc-after-japanese-rail.png" alt="IRCTC after, calm Japanese rail planner" width="100%">
+
 ## Two ways to remodel
 
 - **Reskin** (most websites): keeps the page exactly where it is and repaints it with new colours, fonts, rounded or sharp corners, and shadows. It takes about 10 seconds, and nothing on the page moves or breaks.
