@@ -4,6 +4,7 @@
 
 - Added the four demo videos to the README and `SUBMISSION.md`: python.org reskin, GitHub neon reskin, the Apple Wikipedia rebuild, and a cyberpunk redesign.
 - Showed the before/after screenshots at full width, so the pages are readable. Demo videos are plain links, grouped together, each with a one-line note on what the clip shows.
+- Filled `AI_USAGE.md` from the commit history: Devin on the discarded earlier project, Cursor on Remodel, and the extension's own OpenAI calls.
 
 ## 2026-10-25
 
