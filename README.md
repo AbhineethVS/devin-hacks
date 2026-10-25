@@ -1,35 +1,61 @@
 # Remodel
 
-**Redesign and rewrite any website with a single prompt.**
+**Give any website a new look with one sentence.**
 
-Remodel is an AI-native browser extension that turns a page's real content into a new, reusable interactive experience. The embedded model acts as an art director and front-end engineer: it can invent the layout, components, typography, colour, and motion, while generated code runs inside an extension sandbox.
+Remodel is a Chrome extension. Open a website, type the style you want (for example "cyberpunk" or "neo-brutalist magazine"), and Remodel redesigns the page for you. The site keeps working: links, search, logins and forms still do what they did before.
 
-## Current prototype
+## Before and after
 
-- Reskins any website in about 10 seconds without breaking it. The default mode keeps the live page and its layout and repaints it: new palette, Google Fonts metric-matched to the originals, corner shapes and shadows. Logins, menus and single-page-app navigation keep working, and a skin made on one site applies instantly to any other.
-- Rebuilds any website from a prompt. The public IRCTC homepage, Wikipedia articles, and Hacker News pages have specialised extractors; every other site uses a generic extractor that reads sections, cards, forms, buttons and the site's brand.
-- Writes the prompt for you: **Suggest prompts for this site** studies a screenshot of the page and its content, optionally researches the site on the web, and proposes three art directions. Notes you type first (for example "for kids") shape all three.
-- Designs with real design knowledge: each request pulls matching styles, font pairings, palettes, page patterns and UX rules from the [UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) data set, and the model follows design-judgement rules adapted from Anthropic's [frontend-design](https://github.com/anthropics/skills) skill. Licences are in `third_party/`.
-- Shows its work: while a design is generated, five agent cursors retype headings, regrid blocks, repaint colours, measure spacing and contrast, and copy-edit the original page, all in a non-destructive overlay.
-- Reuses a design across websites: a "Graphic novel" listing made on one shop applies instantly to another listing site, in that site's colours and with its logo.
-- Keeps IRCTC train search functional: station autocomplete, date, class, quota, and submission are bridged to the live booking form.
-- Creates one reusable renderer per page type and applies it instantly on later pages.
-- Adds cinematic scroll reveals, parallax hooks, progress effects, and reduced-motion support.
-- Reviews generated pages from screenshots in the background and runs one repair pass when it finds visible layout defects.
-- Lets you hover a generated Wikipedia chapter and remix that section with another prompt.
-- Preserves links, Wikipedia search, caching, reset, and original/remodel switching with `Alt+R`.
+**GitHub, "cyberpunk / futuristic"**: the layout stays the same, and the colours, fonts and shapes change.
 
-Generic mode is best-effort; see the known limitations in `docs/PRODUCT.md`.
+| Before | After |
+|---|---|
+| ![GitHub before](docs/media/github-before.png) | ![GitHub after, cyberpunk](docs/media/github-after-cyberpunk.png) |
+
+**Wikipedia's Apple Inc. article, rebuilt**: the whole page gets a new layout, in a clean Apple-keynote style.
+
+| Before | After |
+|---|---|
+| ![Wikipedia before](docs/media/apple-wikipedia-before.png) | ![Wikipedia after](docs/media/apple-wikipedia-after.png) |
+
+**Hacker News, as a newspaper front page**: the same stories, laid out like a printed paper.
+
+| Before | After |
+|---|---|
+| ![Hacker News before](docs/media/hackernews-before.png) | ![Hacker News after, newspaper](docs/media/hackernews-after-newspaper.png) |
+
+## Two ways to remodel
+
+- **Reskin** (most websites): keeps the page exactly where it is and repaints it with new colours, fonts, rounded or sharp corners, and shadows. It takes about 10 seconds, and nothing on the page moves or breaks.
+- **Rebuild** (Wikipedia, Hacker News, IRCTC train search): designs a brand-new page from the content, with its own layout and scroll animations. On IRCTC, the new booking form still searches real trains.
+
+## Other things it does
+
+- **Suggest prompts:** not sure what to type? Remodel looks at the page and suggests three styles.
+- **Reuse a style:** a style you made on one site applies instantly on another.
+- **Before / after switch:** press `Alt+R` to flip between the original and the new design.
+- **Remix a section:** on Wikipedia, hover over any section and restyle just that part.
+- **Watch it work:** while it designs, five little cursors visibly edit the page, retyping headings, moving blocks and picking colours.
+- **Self-check:** after a rebuild, the AI looks at a screenshot of its own result and fixes obvious mistakes.
 
 ## Try it
 
-1. Open `chrome://extensions`, enable **Developer mode**, and choose **Load unpacked**.
-2. Select the `extension` directory.
-3. Visit the public [IRCTC train-search homepage](https://www.irctc.co.in/nget/train-search), a Wikipedia article, Hacker News, or any other website.
-4. Click the **✦ Remodel** pill in the bottom-right corner (or the toolbar button, or press Alt+Shift+M), save an OpenAI API key locally, choose a model, and describe the new experience.
-5. On IRCTC, use the redesigned booking form; Remodel hands the journey to IRCTC's real results page.
-6. On Wikipedia, hover a redesigned chapter and choose **Remix** to transform it again.
+1. Open `chrome://extensions` and turn on **Developer mode**.
+2. Click **Load unpacked** and choose the `extension` folder.
+3. Open any website and click the **✦ Remodel** button in the bottom-right corner (or press `Alt+Shift+M`).
+4. Paste your OpenAI API key. It stays in your browser.
+5. Type a style and press **Reskin this page** (or **Remodel this page** on Wikipedia, Hacker News and IRCTC).
 
-There is no development server. The extension is loaded directly by Chrome. API keys are stored in local extension storage and are never committed.
+## Good to know
 
-IRCTC support intentionally ends at the public search handoff. Login, captcha, passenger details, booking, and payment remain in IRCTC's original interface.
+- Pictures and logos keep their original colours.
+- On IRCTC, Remodel stops at train search. Login, booking and payment happen on the real IRCTC site.
+
+## More docs
+
+- [How AI was used to build this](AI_USAGE.md)
+- [What it does and its limits](docs/PRODUCT.md)
+- [Demo script](docs/DEMO_SCRIPT.md)
+- [Change log](CHANGELOG.md): everything that was built, in order
+- [Technical contracts](CONTRACTS.md): data shapes and messages, for developers
+- [Credits for design data and fonts](third_party/NOTICES.md)
